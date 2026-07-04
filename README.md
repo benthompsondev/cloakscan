@@ -59,7 +59,7 @@ npm run verify    # audit + lint + unit tests + build + e2e, all in one
 The **Settings** view (in-app navigation, no page reloads) controls detection without touching any code:
 
 - **General** - Choose Balanced or Strict detection and control the opt-in preference storage.
-- **Profiles & Packs** - Build reusable profiles from country packs, Cloak Lists, custom labeled-field rules, and a redaction format. Each saved profile has an **Edit rules** action, so its detector choices can be changed without rebuilding it.
+- **Profiles & Packs** - Build reusable profiles from country packs, Cloak Lists, custom labeled-field rules, and a redaction format. Each saved profile has an **Edit profile** action that opens a single editor for everything the profile does: name, optional description, Balanced/Strict base mode, country packs, Custom Packs and Cloak Lists, every detection rule (with search, filters, and live enabled/override counts), and the redaction format with a synthetic preview. Edits work on a draft — nothing applies until Save, Cancel discards everything, and the built-in Balanced and Strict presets stay read-only.
 - **Detection Rules** - Search the detector registry, review false-positive guidance, and enable or disable individual rules.
 - **Redaction Formats** - Use indexed labels (`[EMAIL_1]`), unnumbered labels (`[EMAIL]`), a uniform `[REDACTED]` value, or a safe template using `{TYPE}` and `{INDEX}`.
 - **Privacy** - Review storage status and clear saved preferences.
@@ -88,7 +88,13 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Project status
 
-v0.6.7 keeps the detection hardening from v0.6.6 and makes saved profiles easier to change. Each named profile now opens directly in Detection Rules, clearly shows which profile is being edited, and keeps its rule choices separate from the built-in presets.
+v0.7.1 is a big detection pass for names and organizations, plus a proper Profile Editor. It started with real pastes that slipped through: names in CSV exports, "as per …" and "Contact …" notes in tickets, and a copyright line naming an organization. What changed since v0.6.7:
+
+- **Names and organizations get found in far more places.** Quoted JSON keys (`"displayName"`, `"companyName"`), CSV files with recognized columns like FirstName or Department (quotes and commas preserved exactly), copyright lines, prose cues ("prepared by", "as per", "pulled from", "Contact …", "escalated to", "spoke with"), honorifics (`Dr. Alex Demo`), email signatures ("Regards," then a name), To/From/CC headers, workflow labels (AssignedTo, Requester, Attn, Technician, Patient), suffixes and particles (Jr., II, van der, al), and free-text organizations with strong suffixes (Hospital, Healthcare, Ltd, Inc, University, Clinic).
+- **Both name rules are now low confidence, and honest about it.** Detection is contextual — there is no built-in name dictionary, because one would miss uncommon and international names while falsely redacting ordinary words like Mark, Bill, May, or Rose. The rule detail panel now says this in the app and links straight to Cloak Lists for anything CloakGuard misses.
+- **Command syntax stays safe.** `Get-Process -Name "WindowsTerminal"`, `Name = Get-Random`, and parameter lines never become findings; JSON keys and CSV structure come back byte-for-byte.
+- **Profile Editor.** Each saved profile now opens in one editor covering name, description, base mode, packs, Cloak Lists, all 34 detection rules, and the redaction format. Everything edits a draft — nothing applies until Save, Cancel discards it all, and built-in presets stay read-only.
+- There is now a proper test matrix behind the name rules — 60+ positive person cases, 40+ positive organization cases, and 60+ cases that must never match — plus a fifth public stress file covering PowerShell, JSON, CSV, logs, and prose.
 
 This is still a detection helper, not a guarantee or compliance product. Scan history, arbitrary user regex, automatic updates, and code signing are deliberately not included yet.
 
@@ -96,7 +102,7 @@ This is still a detection helper, not a guarantee or compliance product. Scan hi
 
 Issues and pull requests are welcome. Use synthetic examples only and read [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a detector sample.
 
-Four synthetic files under [examples/stress-tests](examples/stress-tests) are available for longer manual checks covering PowerShell, support logs, mixed configuration, and custom organization terms.
+Five synthetic files under [examples/stress-tests](examples/stress-tests) are available for longer manual checks covering PowerShell, support logs, mixed configuration, custom organization terms, and name/organization detection.
 
 ## License
 
