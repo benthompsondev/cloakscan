@@ -83,41 +83,6 @@ test('creating and switching a named profile', async ({ page }) => {
   await expect(page.getByLabel('Active packs')).toContainText('Canada Pack');
 });
 
-test('editing a named profile opens its rules and keeps its choices', async ({ page }) => {
-  await page.goto('/#/settings/general');
-  await page
-    .getByRole('switch', { name: 'Remember preferences on this device' })
-    .check();
-  await page.goto('/#/settings/profiles');
-  await page.getByLabel('New profile name').fill('Support profile');
-  await page.getByRole('button', { name: 'Create profile from current configuration' }).click();
-
-  // Make another profile active first so Edit rules proves that it selects the
-  // intended profile instead of editing whichever configuration was active.
-  await page.getByRole('button', { name: /^Strict/ }).click();
-  await expect(
-    page.getByRole('link', { name: 'Edit detection rules for Balanced' }),
-  ).toHaveCount(0);
-  await page.getByRole('link', { name: 'Edit detection rules for Support profile' }).click();
-
-  await expect(page).toHaveURL(/#\/settings\/rules$/);
-  await expect(page.getByText('Editing profile: Support profile')).toBeVisible();
-  const emailRule = page.getByRole('switch', { name: 'Enable rule Email address' });
-  await expect(emailRule).toBeChecked();
-  await emailRule.uncheck();
-
-  // Switching away and back must preserve the override on the named profile.
-  await page.getByRole('link', { name: 'Done editing' }).click();
-  await page.getByRole('button', { name: /^Strict/ }).click();
-  await page.getByRole('link', { name: 'Edit detection rules for Support profile' }).click();
-  await expect(emailRule).not.toBeChecked();
-
-  // With the global opt-in enabled, the edited profile survives a reload.
-  await page.reload();
-  await expect(page.getByText('Editing profile: Support profile')).toBeVisible();
-  await expect(page.getByRole('switch', { name: 'Enable rule Email address' })).not.toBeChecked();
-});
-
 test('custom pack with a labeled-field rule and pack terms', async ({ page }) => {
   await page.goto('/#/settings/profiles');
   await page.getByRole('button', { name: 'Create Custom Pack' }).click();
@@ -274,7 +239,7 @@ test('Cloak List terms persist only behind BOTH opt-ins', async ({ page }) => {
 
   // Now opt terms in explicitly and confirm they survive a reload.
   await page.goto('/#/settings/profiles');
-  await page.getByRole('button', { name: 'Edit' }).first().click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await page.getByLabel('Cloak List terms').fill('maybe-saved-term');
   await page
     .getByRole('checkbox', {
@@ -287,7 +252,7 @@ test('Cloak List terms persist only behind BOTH opt-ins', async ({ page }) => {
 
   await page.reload();
   await page.goto('/#/settings/profiles');
-  await page.getByRole('button', { name: 'Edit' }).first().click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
   await expect(page.getByLabel('Cloak List terms')).toHaveValue('maybe-saved-term');
 
   await page.evaluate(() => localStorage.clear());

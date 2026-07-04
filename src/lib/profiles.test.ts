@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { detectors } from './detectors';
-import { enabledRuleIds, profileForStates, profileRuleStates } from './profiles';
+import {
+  BALANCED_PROFILE,
+  STRICT_PROFILE,
+  enabledRuleIds,
+  profileForStates,
+  profileRuleStates,
+  sameConfig,
+  type ProfileConfig,
+} from './profiles';
 import { scanText } from './scan';
 import { DEMO_TEXT } from './demo';
 
@@ -60,5 +68,42 @@ describe('scan engine configuration', () => {
     const before = detectors.map((d) => d.id).join(',');
     scanText(DEMO_TEXT, { enabledDetectorIds: ['email'] });
     expect(detectors.map((d) => d.id).join(',')).toBe(before);
+  });
+});
+
+describe('profile editor save semantics', () => {
+  const saved = (): ProfileConfig => ({
+    id: 'profile-support',
+    name: 'Support profile',
+    description: 'Synthetic demo profile',
+    core: 'balanced',
+    packIds: ['pack-ca-v1'],
+    customPackIds: [],
+    overrides: { email: false },
+    format: { id: 'indexed', customTemplate: '[{TYPE}_{INDEX}]' },
+  });
+
+  it('rename and description edits do NOT count as scanning changes', () => {
+    const a = saved();
+    expect(sameConfig(a, { ...a, name: 'Sharing profile', description: 'Renamed' })).toBe(true);
+  });
+
+  it('mode, pack, Cloak List, override, and format edits DO count as scanning changes', () => {
+    const a = saved();
+    expect(sameConfig(a, { ...a, core: 'strict' })).toBe(false);
+    expect(sameConfig(a, { ...a, packIds: [] })).toBe(false);
+    expect(sameConfig(a, { ...a, customPackIds: ['pack-x'] })).toBe(false);
+    expect(sameConfig(a, { ...a, overrides: {} })).toBe(false);
+    expect(
+      sameConfig(a, { ...a, format: { id: 'uniform', customTemplate: '[{TYPE}_{INDEX}]' } }),
+    ).toBe(false);
+  });
+
+  it('built-in presets are frozen — the editor path can never mutate them', () => {
+    expect(Object.isFrozen(BALANCED_PROFILE)).toBe(true);
+    expect(Object.isFrozen(STRICT_PROFILE)).toBe(true);
+    expect(() => {
+      (BALANCED_PROFILE as { name: string }).name = 'mutated';
+    }).toThrow();
   });
 });

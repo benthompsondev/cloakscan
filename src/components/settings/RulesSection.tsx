@@ -5,7 +5,7 @@ import { RULE_INFO } from '../../lib/ruleInfo';
 import { packsForDetector } from '../../lib/packs';
 import { scanText } from '../../lib/scan';
 import { buildCleanText } from '../../lib/sanitize';
-import { templateFor } from '../../lib/redaction';
+import { templateFor, type RedactionChoice } from '../../lib/redaction';
 import type { SettingsProps } from './SettingsView';
 
 /** Short badge text per built-in pack for the rules table. */
@@ -28,14 +28,24 @@ for (const d of detectors) {
   CONFIDENCE_SHORT[d.id] = RULE_INFO[d.id]?.confidence.split(' ')[0].replace(/[^A-Za-z]/g, '') ?? '';
 }
 
-export function RulesSection({
-  workspace,
+/**
+ * The filterable rule list with toggles and the detail panel. Shared between
+ * the Detection Rules page (editing the ACTIVE configuration) and the Profile
+ * Editor (editing a DRAFT) — one presentation, one detector registry, and the
+ * caller decides what a toggle mutates.
+ */
+export function RuleBrowser({
+  query,
   resolvedStates,
-  activeConfig,
+  format,
   onToggleRule,
-}: SettingsProps) {
+}: {
+  query: string;
+  resolvedStates: Record<string, boolean>;
+  format: RedactionChoice;
+  onToggleRule: (id: string, enabled: boolean) => void;
+}) {
   const [filter, setFilter] = useState<'all' | Category>('all');
-  const [query, setQuery] = useState('');
   const [enabledOnly, setEnabledOnly] = useState(false);
   const [strictOnly, setStrictOnly] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -50,51 +60,9 @@ export function RulesSection({
   );
   const selected = detectors.find((d) => d.id === selectedId) ?? null;
   const countFor = (category: Category) => detectors.filter((d) => d.category === category).length;
-  const isNamedProfile = !activeConfig.builtIn && activeConfig.id !== 'unsaved';
 
   return (
-    <section className="panel settings-panel" aria-label="Detection rules">
-      <div className="panel-head">
-        <div className="panel-title">
-          <h2>Detection Rules</h2>
-          <span className="muted">
-            {detectors.length} rules · {Object.values(resolvedStates).filter(Boolean).length}{' '}
-            enabled in {activeConfig.name}
-          </span>
-        </div>
-        <input
-          type="search"
-          className="rule-search"
-          placeholder="Search rules…"
-          aria-label="Search rules"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          spellCheck={false}
-        />
-      </div>
-      <div className={`profile-edit-context ${isNamedProfile ? 'is-named' : ''}`}>
-        <div>
-          <strong>
-            {isNamedProfile
-              ? `Editing profile: ${activeConfig.name}`
-              : activeConfig.builtIn
-                ? `Built-in profile: ${activeConfig.name}`
-                : 'Editing unsaved configuration'}
-          </strong>
-          <span className="muted">
-            {isNamedProfile
-              ? workspace.remember
-                ? 'Rule changes are saved to this profile on this device automatically.'
-                : 'Rule changes stay with this profile for this session. Turn on Remember preferences to keep them after closing.'
-              : activeConfig.builtIn
-                ? 'Changing a rule creates an unsaved configuration so this preset stays unchanged.'
-                : 'Create a named profile in Profiles & Packs if you want to keep this configuration.'}
-          </span>
-        </div>
-        <a className="btn btn-mini" href="#/settings/profiles">
-          {isNamedProfile ? 'Done editing' : 'Profiles & Packs'}
-        </a>
-      </div>
+    <>
       <div className="filters" role="group" aria-label="Filter rules">
         {CATEGORY_FILTERS.map((c) => (
           <button
@@ -169,11 +137,73 @@ export function RulesSection({
           <RuleDetail
             detector={selected}
             resolvedStates={resolvedStates}
-            format={activeConfig.format}
+            format={format}
             onToggleRule={onToggleRule}
           />
         )}
       </div>
+    </>
+  );
+}
+
+export function RulesSection({
+  workspace,
+  resolvedStates,
+  activeConfig,
+  onToggleRule,
+}: SettingsProps) {
+  const [query, setQuery] = useState('');
+  const isNamedProfile = !activeConfig.builtIn && activeConfig.id !== 'unsaved';
+
+  return (
+    <section className="panel settings-panel" aria-label="Detection rules">
+      <div className="panel-head">
+        <div className="panel-title">
+          <h2>Detection Rules</h2>
+          <span className="muted">
+            {detectors.length} rules · {Object.values(resolvedStates).filter(Boolean).length}{' '}
+            enabled in {activeConfig.name}
+          </span>
+        </div>
+        <input
+          type="search"
+          className="rule-search"
+          placeholder="Search rules…"
+          aria-label="Search rules"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          spellCheck={false}
+        />
+      </div>
+      <div className={`profile-edit-context ${isNamedProfile ? 'is-named' : ''}`}>
+        <div>
+          <strong>
+            {isNamedProfile
+              ? `Editing profile: ${activeConfig.name}`
+              : activeConfig.builtIn
+                ? `Built-in profile: ${activeConfig.name}`
+                : 'Editing unsaved configuration'}
+          </strong>
+          <span className="muted">
+            {isNamedProfile
+              ? workspace.remember
+                ? 'Rule changes are saved to this profile on this device automatically.'
+                : 'Rule changes stay with this profile for this session. Turn on Remember preferences to keep them after closing.'
+              : activeConfig.builtIn
+                ? 'Changing a rule creates an unsaved configuration so this preset stays unchanged.'
+                : 'Create a named profile in Profiles & Packs if you want to keep this configuration.'}
+          </span>
+        </div>
+        <a className="btn btn-mini" href="#/settings/profiles">
+          {isNamedProfile ? 'Done editing' : 'Profiles & Packs'}
+        </a>
+      </div>
+      <RuleBrowser
+        query={query}
+        resolvedStates={resolvedStates}
+        format={activeConfig.format}
+        onToggleRule={onToggleRule}
+      />
     </section>
   );
 }
@@ -219,6 +249,14 @@ function RuleDetail({
         </label>
       </div>
       <p className="muted">{detector.explanation}</p>
+      {(detector.id === 'person-name' || detector.id === 'org-name') && (
+        <p className="muted rule-coverage-note" role="note" data-testid="name-coverage-note">
+          CloakGuard may not find every name or organization — this rule only detects values with
+          recognizable context. For anything it misses, add the exact words with{' '}
+          <strong>Hide custom terms</strong> on the Scan screen, or keep a reusable{' '}
+          <a href="#/settings/profiles">Cloak List</a>.
+        </p>
+      )}
       {info && (
         <>
           <h4>What it detects</h4>

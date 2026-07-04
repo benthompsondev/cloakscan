@@ -1729,3 +1729,16 @@ body {
   gap: 8px;
   font-size: 13.5px;
 }
+
+/* ---------- name/org coverage note ---------- */
+
+.rule-coverage-note {
+  border-left: 3px solid var(--medium);
+  background: #fbbf6e12;
+  padding: 7px 11px;
+  border-radius: 0 8px 8px 0;
+}
+
+.rule-coverage-note a {
+  color: var(--accent);
+}

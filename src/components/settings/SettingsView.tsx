@@ -23,6 +23,7 @@ export interface SettingsProps {
   onRenameProfile: (id: string, name: string) => void;
   onDeleteProfile: (id: string) => void;
   onResetOverrides: () => void;
+  onSaveProfile: (profile: ProfileConfig) => void;
   onSavePack: (pack: CustomPack) => void;
   onDuplicatePack: (id: string) => void;
   onDeletePack: (id: string) => void;

@@ -82,3 +82,20 @@ test('capture cloak list editor', async ({ page }) => {
   mkdirSync('docs/screenshots', { recursive: true });
   await page.screenshot({ path: 'docs/screenshots/cloak-list-editor-1440x900.png', fullPage: true });
 });
+
+test('capture profile editor', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/#/settings/profiles');
+  await page.getByLabel('New profile name').fill('Sharing profile');
+  await page.getByRole('button', { name: 'Create profile from current configuration' }).click();
+  await page.getByRole('button', { name: 'Edit profile Sharing profile' }).click();
+  await page
+    .getByLabel('Profile description')
+    .fill('Synthetic demo: sanitizing logs before sharing them outside the team');
+  await page.getByRole('checkbox', { name: 'Include pack Canada Pack in this profile' }).check();
+  await expect(page.getByTestId('profile-editor-rule-counts')).toContainText('rules enabled');
+  // Let the transient profile-created notice disappear before capturing.
+  await expect(page.getByText('created.')).toBeHidden({ timeout: 10000 });
+  mkdirSync('docs/screenshots', { recursive: true });
+  await page.screenshot({ path: 'docs/screenshots/profile-editor-1440x900.png', fullPage: true });
+});

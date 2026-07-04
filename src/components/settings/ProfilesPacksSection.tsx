@@ -5,11 +5,13 @@ import { MAX_CUSTOM_PACKS, isCloakList, type CustomPack } from '../../lib/custom
 import type { SettingsProps } from './SettingsView';
 import { CustomPackEditor } from './CustomPackEditor';
 import { CloakListEditor } from './CloakListEditor';
+import { ProfileEditor } from './ProfileEditor';
 
 export function ProfilesPacksSection(props: SettingsProps) {
   const { workspace, activeConfig } = props;
   const [editingPack, setEditingPack] = useState<CustomPack | 'new' | null>(null);
   const [editingList, setEditingList] = useState<CustomPack | 'new' | null>(null);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
   const [detailsPackId, setDetailsPackId] = useState<string | null>(null);
   const [newProfileName, setNewProfileName] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -22,6 +24,24 @@ export function ProfilesPacksSection(props: SettingsProps) {
 
   const cloakLists = workspace.customPacks.filter(isCloakList);
   const advancedPacks = workspace.customPacks.filter((p) => !isCloakList(p));
+
+  // Only saved named profiles can be edited — built-in presets never appear
+  // in workspace.profiles, so they can never reach the editor.
+  const editingProfile = workspace.profiles.find((p) => p.id === editingProfileId) ?? null;
+  if (editingProfile !== null) {
+    return (
+      <ProfileEditor
+        profile={editingProfile}
+        customPacks={workspace.customPacks}
+        remember={workspace.remember}
+        onSave={(profile) => {
+          props.onSaveProfile(profile);
+          setEditingProfileId(null);
+        }}
+        onCancel={() => setEditingProfileId(null)}
+      />
+    );
+  }
 
   if (editingList !== null) {
     return (
@@ -120,14 +140,14 @@ export function ProfilesPacksSection(props: SettingsProps) {
                   </span>
                 ) : named ? (
                   <span className="profile-row-actions">
-                    <a
+                    <button
+                      type="button"
                       className="btn btn-mini"
-                      href="#/settings/rules"
-                      aria-label={`Edit detection rules for ${p.name}`}
-                      onClick={() => props.onSelectProfile(p.id)}
+                      aria-label={`Edit profile ${p.name}`}
+                      onClick={() => setEditingProfileId(p.id)}
                     >
-                      Edit rules
-                    </a>
+                      Edit profile
+                    </button>
                     <button
                       type="button"
                       className="btn btn-mini"
@@ -191,9 +211,10 @@ export function ProfilesPacksSection(props: SettingsProps) {
         </div>
         <p className="muted">
           A profile combines a Core mode (Balanced or Strict), selected packs, rule overrides, and
-          a redaction format. Use <strong>Edit rules</strong> on a named profile to choose exactly
-          what it detects. Built-in presets are read-only — changing anything while one is active
-          creates an unsaved configuration.{' '}
+          a redaction format. Use <strong>Edit profile</strong> on a named profile to change its
+          name, mode, packs, rules, and format in one place — nothing applies until you save.
+          Built-in presets are read-only — changing anything while one is active creates an
+          unsaved configuration.{' '}
           {Object.keys(activeConfig.overrides).length > 0 && (
             <button type="button" className="btn btn-mini" onClick={props.onResetOverrides}>
               Reset {Object.keys(activeConfig.overrides).length} rule override

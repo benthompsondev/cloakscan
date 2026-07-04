@@ -68,6 +68,35 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe('profile description persistence', () => {
+  it('round-trips a profile description within the 200-character cap', () => {
+    const description = 'Synthetic profile for sharing sanitized logs outside the team.';
+    savePreferencesV2({
+      version: 2,
+      activeProfileId: 'p-demo',
+      profiles: [namedProfile({ description })],
+      customPacks: [],
+    });
+    const loaded = loadPreferencesV2();
+    expect(loaded?.profiles[0]?.description).toBe(description);
+  });
+
+  it('drops an over-200-character description on load instead of truncating silently wrong data', () => {
+    const raw = JSON.parse(localStorage.getItem(PREFERENCES_STORAGE_KEY_V2) ?? 'null');
+    savePreferencesV2({
+      version: 2,
+      activeProfileId: 'p-demo',
+      profiles: [namedProfile()],
+      customPacks: [],
+    });
+    const stored = JSON.parse(localStorage.getItem(PREFERENCES_STORAGE_KEY_V2)!);
+    stored.profiles[0].description = 'x'.repeat(201);
+    const cleaned = sanitizeV2(stored);
+    expect(cleaned?.profiles[0]?.description).toBeUndefined();
+    expect(raw).toBeNull(); // sanity: this test started from an empty store
+  });
+});
+
 describe('v2 persistence', () => {
   it('round-trips profiles and custom packs under one v2 key', () => {
     savePreferencesV2({

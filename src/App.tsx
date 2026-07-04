@@ -17,6 +17,7 @@ import {
   enabledRuleIds,
   generateId,
   resolveRuleStates,
+  sameConfig,
   validateName,
   type ProfileConfig,
 } from './lib/profiles';
@@ -229,6 +230,28 @@ export default function App() {
       c.overrides = {};
     });
 
+  /**
+   * Replace one named profile with the edited version from the Profile
+   * Editor. Only the matching id is touched; built-ins can never arrive here
+   * because the editor only opens for profiles in workspace.profiles. Scan
+   * results are invalidated only when the edited profile is ACTIVE and its
+   * scanning behavior (mode/packs/overrides/format) actually changed —
+   * renames and description edits keep existing results.
+   */
+  const onSaveProfile = (profile: ProfileConfig) => {
+    const existing = workspace.profiles.find((p) => p.id === profile.id);
+    if (!existing) return;
+    const scanningChanged = !sameConfig(existing, profile);
+    commit(
+      {
+        ...workspace,
+        profiles: workspace.profiles.map((p) => (p.id === profile.id ? profile : p)),
+      },
+      { invalidate: scanningChanged && workspace.activeProfileId === profile.id },
+    );
+    showNotice({ kind: 'ok', text: `Profile "${profile.name}" updated.` });
+  };
+
   // ----- custom pack operations -----
 
   const onSavePack = (pack: CustomPack) => {
@@ -354,6 +377,7 @@ export default function App() {
     onRenameProfile,
     onDeleteProfile,
     onResetOverrides,
+    onSaveProfile,
     onSavePack,
     onDuplicatePack,
     onDeletePack,
