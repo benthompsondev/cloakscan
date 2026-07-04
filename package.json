@@ -1,0 +1,56 @@
+{
+  "name": "cloakguard",
+  "private": true,
+  "version": "0.6.5",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "description": "Local-first text sanitizer. Detects and redacts secrets, credentials, infrastructure details, and personal data entirely on this device.",
+  "homepage": "https://github.com/benthompsondev/cloakguard#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/benthompsondev/cloakguard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/benthompsondev/cloakguard/issues"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start:local": "npm run build && vite preview --host 127.0.0.1 --strictPort --port 4173 --open",
+    "preview": "vite preview --host 127.0.0.1 --strictPort --port 4173",
+    "test:e2e": "playwright test",
+    "test:private-corpus": "vitest run --config vitest.corpus.config.ts --disableConsoleIntercept",
+    "verify": "npm audit && npm run lint && npm run test && npm run build && npm run test:e2e",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "build": "tsc -b && vite build",
+    "check": "npm run lint && npm run test && npm run build",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
+    "desktop:check": "npm run build && cargo check --manifest-path src-tauri/Cargo.toml",
+    "desktop:verify": "npm run desktop:check && cargo test --manifest-path src-tauri/Cargo.toml"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.11.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^26.1.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^10.6.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
+    "vite": "^8.1.2",
+    "vitest": "^4.1.9"
+  }
+}

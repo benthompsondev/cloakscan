@@ -1,0 +1,22 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+*.local
+.DS_Store
+*.tsbuildinfo
+
+# Tauri / Rust build outputs (installers land in src-tauri/target/release/bundle)
+src-tauri/target/
+src-tauri/gen/
+.cargo/
+
+# Staged release binaries (never tracked)
+release/
+
+# Local coding-agent guidance is useful in this checkout but not public project content.
+AGENTS.md
+CLAUDE.md
+.claude/
+.codex/
+.agents/

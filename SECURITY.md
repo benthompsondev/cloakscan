@@ -1,0 +1,29 @@
+# Security & Privacy Model
+
+## What CloakGuard guarantees
+
+- **On-device only.** All detection and sanitization run locally on this device. CloakGuard has no backend and no remote service: the application code contains no network calls, loads no remote assets, and **makes no remote application requests**. As defense-in-depth, the production build additionally ships a strict Content Security Policy (`default-src 'none'; connect-src 'none'`) that blocks outbound connection APIs, and an automated e2e test asserts that no non-local origin is contacted during a full user flow. A CSP is a strong mitigation, not a mathematical guarantee — the primary protection is that the app is fully static and self-contained.
+- **Application traffic vs. platform traffic.** The no-requests guarantee above is about CloakGuard's own code. The engine that renders it (your browser on the web, Microsoft's WebView2 runtime in the desktop app) is platform software that may independently perform its own networking (e.g., runtime maintenance) and maintains its own engine cache/profile on disk. CloakGuard passes WebView2 the flags that disable its optional background services, never hands it any content to send, and works fully offline — but we do not claim the entire operating-system process tree can never produce any network traffic.
+- **Local-only server.** The dev/start scripts bind to `127.0.0.1` exclusively, so the app is never reachable from other machines on your network.
+- **No content persistence.** User content — the source text, findings, sanitized output, scan history, and any session-only custom terms — is never persisted by CloakGuard: it lives only in component memory. Closing the app, refreshing, or clicking *Clear session* destroys everything, and automated tests verify a default load writes nothing to localStorage, sessionStorage, or IndexedDB. (The rendering engine keeps its own engine-level cache/profile folder like any browser does; CloakGuard never puts content in it.)
+- **Opt-in preferences only.** "Remember preferences on this device" is OFF by default; named profiles, custom packs, Cloak Lists, custom labeled-field rules, and cloak terms are all session-only and vanish on reload. When enabled, exactly one versioned localStorage key (`cloakguard.prefs.v2`) stores an allowlisted object — `{ version, activeProfileId, profiles, customPacks }` — and loading discards anything outside that allowlist: unknown fields, malformed rules, oversized arrays (max 20 profiles, 20 packs, 20 rules per pack, 100 terms per pack), invalid placeholder labels, and unknown detector or pack ids. Legacy v1 keys are migrated to v2 once, then deleted. The key never contains source text, imported file contents or filenames, findings, matched values, masked previews, sanitized output, clipboard content, or scan history.
+- **Cloak term values need a second opt-in.** Cloak List / pack term values persist only when BOTH conditions hold: "Remember preferences on this device" is on AND that list's own "Save this Cloak List's terms on this device" option (in advanced Custom Packs: "Save this pack's Cloak terms on this device") is explicitly checked. With preference storage off, the per-list option has no effect and nothing is written. Terms entered through **Hide custom terms** on the Scan screen never persist under any combination of settings. Saved terms are readable, **unencrypted** local data on this device; nothing is uploaded, and *Clear preferences* deletes them along with both storage keys (v1 and v2), all saved profiles, custom packs, and custom rules.
+- **No scan history, deliberately.** Sanitized output can still contain a value the detectors missed; automatically saving results would quietly persist exactly the data this tool protects. Any future history feature requires a separate review with explicit per-result saving, warnings, deletion, and retention controls.
+- **In-memory file handling.** Imported files are read with the browser File API and decoded in memory (UTF-8 and UTF-16 supported, 2 MB limit); downloads are generated from an in-memory Blob whose object URL is revoked immediately after the click. No file content is uploaded, cached, or stored.
+- **No logging of content.** Pasted text and full detected values are never written to the console or anywhere else. The UI shows masked previews only.
+- **No accounts, analytics, or telemetry.** There is nothing to opt out of.
+
+## What CloakGuard does NOT guarantee
+
+- **Complete detection.** Detectors are pattern-based. They will miss sensitive data that doesn't match a known shape (odd token formats, names, free-text secrets, non-Latin identifiers). **Automated detection can miss sensitive information. Review before sharing.**
+- **False-positive freedom.** Some findings (Jira-style IDs, loopback IPs) are flagged at lower confidence and may be harmless. That is why every finding can be toggled off.
+- **Protection outside the app.** CloakGuard cannot control your clipboard history, clipboard-syncing tools, or what happens to text after you paste it elsewhere.
+- **Platform networking silence.** CloakGuard cannot guarantee that your browser or Microsoft's WebView2 runtime never perform their own platform networking; it only guarantees that CloakGuard itself requests nothing and sends nothing.
+
+## Threat model
+
+CloakGuard defends against *accidental* disclosure when sharing text externally. It does not defend against a compromised machine, a malicious browser extension, or a hostile local user — anything that can read browser memory can read your text.
+
+## Reporting
+
+If you find a detector gap, a persistence/network regression, or behavior that contradicts these guarantees, [open an issue](https://github.com/benthompsondev/cloakguard/issues) describing the input *shape*. Never paste real sensitive data into an issue.

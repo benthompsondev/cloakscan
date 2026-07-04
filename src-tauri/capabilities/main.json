@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Minimum surface for the CloakGuard window: exactly one app command (export_clean_text — native save dialog + write to the user-picked path). No core defaults and no dialog, filesystem, shell, HTTP, clipboard, menu, tray, event, image, window, or devtools plugin permissions.",
+  "windows": ["main"],
+  "permissions": ["allow-export-clean-text"]
+}
