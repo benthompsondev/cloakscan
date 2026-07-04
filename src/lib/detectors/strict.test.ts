@@ -128,6 +128,154 @@ describe('line-boundary regressions', () => {
   });
 });
 
+describe('v0.7 name/organization assurance characterization', () => {
+  it('finds names after clear prose cues (contact / as per / pulled from / lifted from)', () => {
+    expect(values(personNameDetector, 'csv formatted as per Casey R specifications')).toEqual([
+      'Casey R',
+    ]);
+    expect(
+      values(personNameDetector, 'AD group list pulled from Casey Rivera and imported'),
+    ).toEqual(['Casey Rivera']);
+    expect(values(personNameDetector, 'Lifted from Morgan Vance')).toEqual(['Morgan Vance']);
+    expect(values(personNameDetector, 'Contact Rowan Ashford?')).toEqual(['Rowan Ashford']);
+  });
+
+  it('finds person values under quoted JSON keys without touching the keys', () => {
+    const text = '{"name": "Alex Demo", "status": "active", "requestedBy": "Bea Example"}';
+    expect(values(personNameDetector, text)).toEqual(['Alex Demo', 'Bea Example']);
+    const findings = scanText(text, { enabledDetectorIds: strictIds });
+    expect(buildCleanText(text, findings)).toBe(
+      '{"name": "[NAME_1]", "status": "active", "requestedBy": "[NAME_2]"}',
+    );
+  });
+
+  it('finds organization values under quoted JSON keys', () => {
+    expect(
+      values(orgNameDetector, '"companyName": "Northwind Traders Ltd", "count": 3'),
+    ).toEqual(['Northwind Traders Ltd']);
+  });
+
+  it('finds person and organization cells under recognized CSV headers', () => {
+    const csv = 'FirstName,LastName,Department,Status\r\nAlex,Demo,Example Clinical Systems,Active\r\n';
+    expect(values(personNameDetector, csv)).toEqual(['Alex', 'Demo']);
+    expect(values(orgNameDetector, csv)).toEqual(['Example Clinical Systems']);
+  });
+
+  it('accepts generational suffixes and multi-word particles', () => {
+    expect(values(personNameDetector, 'Owner: Alex Demo II')).toEqual(['Alex Demo II']);
+    expect(values(personNameDetector, 'Owner: Anna van der Berg')).toEqual(['Anna van der Berg']);
+    expect(values(personNameDetector, 'Owner: Omar al Farouk Jr.')).toEqual(['Omar al Farouk Jr.']);
+  });
+
+  it('finds copyright organizations in plain text and comments', () => {
+    expect(
+      values(orgNameDetector, "Copyright (c) 2024 St. Brigid's Healthcare Exampleville"),
+    ).toEqual(["St. Brigid's Healthcare Exampleville"]);
+    expect(
+      values(orgNameDetector, '# Copyright 2019-2024 Northwind Community Services. All rights reserved.'),
+    ).toEqual(['Northwind Community Services']);
+  });
+
+  it('accepts caseless-script values only under explicit labels', () => {
+    expect(values(personNameDetector, 'Name: 田中太郎')).toEqual(['田中太郎']);
+    expect(values(orgNameDetector, 'Organization: 北風商事')).toEqual(['北風商事']);
+    // Never in free text, even for caseless scripts.
+    expect(values(personNameDetector, '田中太郎 reviewed the deployment')).toEqual([]);
+  });
+
+  it('ignores PowerShell -Name parameters and cmdlet-shaped values', () => {
+    expect(values(personNameDetector, 'Get-Process -Name "WindowsTerminal"')).toEqual([]);
+    expect(values(personNameDetector, 'Get-Service -Name "ExampleAgent"')).toEqual([]);
+    expect(values(personNameDetector, 'Name = Get-Random')).toEqual([]);
+  });
+});
+
+describe('v0.7.1 hardening: more person contexts', () => {
+  it('finds names under workflow labels (assigned to, requester, reviewer, attn)', () => {
+    expect(values(personNameDetector, 'AssignedTo: Alex Demo')).toEqual(['Alex Demo']);
+    expect(values(personNameDetector, 'Requester = "Bea Example"')).toEqual(['Bea Example']);
+    expect(values(personNameDetector, 'Reviewer: Casey Rivera')).toEqual(['Casey Rivera']);
+    expect(values(personNameDetector, 'Attn: Rowan Ashford')).toEqual(['Rowan Ashford']);
+    expect(values(personNameDetector, 'Technician: Priya Raman')).toEqual(['Priya Raman']);
+    expect(values(personNameDetector, 'Patient: Morgan Vance')).toEqual(['Morgan Vance']);
+  });
+
+  it('finds names in To/From/CC message headers', () => {
+    const text = 'From: Alex Demo\nTo: Bea Example\nCC: Casey Rivera';
+    expect(values(personNameDetector, text)).toEqual(['Alex Demo', 'Bea Example', 'Casey Rivera']);
+    // Non-name header values stay untouched.
+    expect(values(personNameDetector, 'From: relay01.example.internal')).toEqual([]);
+  });
+
+  it('finds honorific-prefixed names in free text', () => {
+    expect(values(personNameDetector, 'Dr. Alex Demo will review the results')).toEqual([
+      'Alex Demo',
+    ]);
+    expect(values(personNameDetector, 'escalate to Ms. Rivera before noon')).toEqual(['Rivera']);
+    expect(values(personNameDetector, 'Prof. Élodie Marchand teaches the module')).toEqual([
+      'Élodie Marchand',
+    ]);
+  });
+
+  it('finds signature names after closings, same line and next line', () => {
+    expect(values(personNameDetector, 'Thanks, Alex Demo')).toEqual(['Alex Demo']);
+    expect(values(personNameDetector, 'Regards,\nBea Example')).toEqual(['Bea Example']);
+    expect(values(personNameDetector, 'Kind regards,\nCasey Rivera\nHelpdesk')).toEqual([
+      'Casey Rivera',
+    ]);
+    // A closing followed by a non-name line stays untouched.
+    expect(values(personNameDetector, 'Thanks,\nthe deployment team')).toEqual([]);
+  });
+
+  it('finds names after escalation and conversation cues', () => {
+    expect(values(personNameDetector, 'ticket escalated to Morgan Vance at 9am')).toEqual([
+      'Morgan Vance',
+    ]);
+    expect(values(personNameDetector, 'spoke with Priya Raman about the outage')).toEqual([
+      'Priya Raman',
+    ]);
+    expect(values(personNameDetector, 'handed off to Rowan Ashford overnight')).toEqual([
+      'Rowan Ashford',
+    ]);
+  });
+});
+
+describe('v0.7.1 hardening: more organization contexts', () => {
+  it('finds organizations under expanded labels', () => {
+    expect(values(orgNameDetector, 'Customer: Woodgrove Bank Corp')).toEqual([
+      'Woodgrove Bank Corp',
+    ]);
+    expect(values(orgNameDetector, 'Institution = "Bellows College"')).toEqual([
+      'Bellows College',
+    ]);
+    expect(values(orgNameDetector, 'Partner: Proseware Solutions LLC')).toEqual([
+      'Proseware Solutions LLC',
+    ]);
+    expect(values(orgNameDetector, 'Division: Clinical Systems Demo')).toEqual([
+      'Clinical Systems Demo',
+    ]);
+  });
+
+  it('finds strong-suffix organizations in free text', () => {
+    expect(
+      values(orgNameDetector, 'sent the export to Northwind Regional Hospital yesterday'),
+    ).toEqual(['Northwind Regional Hospital']);
+    expect(values(orgNameDetector, 'the invoice from Fabrikam & Sons Ltd arrived')).toEqual([
+      'Fabrikam & Sons Ltd',
+    ]);
+    expect(values(orgNameDetector, 'Lamna Healthcare Company confirmed the outage')).toEqual([
+      'Lamna Healthcare Company',
+    ]);
+  });
+
+  it('free-text matching requires a STRONG suffix — generic phrases stay untouched', () => {
+    expect(values(orgNameDetector, 'The Deployment Team approved the change window')).toEqual([]);
+    expect(values(orgNameDetector, 'restart the Data Center switches')).toEqual([]);
+    expect(values(orgNameDetector, 'the Working Group met on Friday')).toEqual([]);
+    expect(values(orgNameDetector, 'Professional Services responded')).toEqual([]);
+  });
+});
+
 describe('strict rules inside the full engine', () => {
   it('redact labeled names with their own placeholders', () => {
     const text = 'Owner: Alex Demo   Company: Contoso Health';

@@ -76,10 +76,19 @@ text before sharing it.
 - Contextual infrastructure and secret assignment rules only replace quoted
   literals. Values assembled from variables or expressions are left alone to
   preserve code semantics.
-- Strict detects names and organizations in explicit fields, first/last-name
-  fields, clear author/contact context, and conservative organization-shaped
-  comments. Arbitrary free-text names and organization-specific terms are not
-  guessed. Use
+- Strict detects names and organizations in explicit fields (INI, YAML,
+  PowerShell assignments and hashtables, and quoted JSON keys such as
+  `"displayName"` or `"companyName"`), recognized CSV columns under a plausible
+  header, clear author/contact bylines, prose cues such as "prepared by …",
+  "as per …", "pulled from …", and "Contact …", and copyright lines
+  (`Copyright (c) 2024 <organization>`). Values in scripts without letter
+  casing (CJK, Arabic, …) are accepted only in labeled or structured contexts.
+  PowerShell parameters such as `-Name "WindowsTerminal"` and Verb-Noun
+  values such as `Get-Random` are command syntax and never match. This is
+  contextual detection, not universal name recognition: arbitrary free-text
+  names and organization-specific terms are NOT guessed, because that would
+  require a name dictionary that misses uncommon and international names while
+  falsely redacting ordinary words like Mark, Bill, May, Rose, or Main. Use
   **Hide custom terms** (session-only) or a reusable **Cloak List** when a sensitive
   value has no reliable generic structure. Cloak terms are never regex and use
   exact word/phrase boundaries by default. Common apostrophe, dash, and

@@ -69,6 +69,84 @@ describe('public manual stress fixtures', () => {
     expect(cleaned.split(/\r?\n/)).toHaveLength(source.split(/\r?\n/).length);
     expect(cleaned).toContain('generated_password = $GeneratedPassword');
     expect(cleaned).toContain('password_command = Get-RandomPassword');
+
+    // JSON block: values are redacted, keys and structure stay byte-for-byte.
+    for (const value of ['Jean-Luc Picard', 'Regional Support Services']) {
+      expect(cleaned, `JSON value "${value}" must be redacted`).not.toContain(value);
+    }
+    expect(cleaned).toContain('"displayName": "[NAME_');
+    expect(cleaned).toContain('"companyName": "[ORG_');
+    expect(cleaned).toContain('"department": "[ORG_');
+
+    // CSV block: person/org cells are redacted, header and quoting stay intact.
+    expect(cleaned).toContain('DisplayName,UserPrincipalName,Company,Department,Phone');
+    for (const value of [
+      'Alex Demo',
+      'Bea Example',
+      'Chris Sample',
+      'Northwind Regional Hospital',
+      'Example Community Health',
+      'Clinical Systems Demo',
+    ]) {
+      expect(cleaned, `CSV value "${value}" must be redacted`).not.toContain(value);
+    }
+    expect(cleaned).toMatch(/"\[NAME_\d+\]","\[EMAIL_\d+\]","\[ORG_\d+\]","\[ORG_\d+\]"/);
+  });
+
+  it('cleans the name/organization stress file across PowerShell, JSON, CSV, logs, and prose', () => {
+    const { source, cleaned, detectorIds } = scanFixture('names-and-organizations.txt');
+    expect(detectorIds.has('person-name')).toBe(true);
+    expect(detectorIds.has('org-name')).toBe(true);
+    expect(cleaned.split(/\r?\n/)).toHaveLength(source.split(/\r?\n/).length);
+
+    // Expected redactions across every syntax section.
+    for (const value of [
+      'Alex Demo',
+      'Bea Example-Person',
+      'Casey Rivera',
+      'Rowan Ashford',
+      'Morgan Vance',
+      'Anna van der Berg',
+      'Priya Raman',
+      'Nico D’Angelo',
+      "Ciara O'Connor",
+      'Élodie',
+      'Marchand',
+      'Sofía Andrade',
+      '田中',
+      'Northwind Regional Hospital',
+      "St. Brigid's Healthcare Exampleville",
+      'Fabrikam & Sons Ltd',
+      'Trey Research Institute',
+      'Wide World Importers Inc',
+      'Regional Support Services',
+      'Lamna Healthcare Company',
+      "O'Hara Family Clinic",
+      '北風商事',
+    ]) {
+      expect(cleaned, `expected "${value}" to be redacted`).not.toContain(value);
+    }
+
+    // Command syntax, non-name prose, and the documented free-text boundary
+    // stay byte-for-byte.
+    for (const untouched of [
+      'Get-Process -Name "WindowsTerminal" | Stop-Process -WhatIf',
+      'Get-Service -Name "ExampleAgent"',
+      'Select-Object -Property Name, Status',
+      '$ServiceName = "Print Spooler"',
+      'Name = Get-Random',
+      'Company = $Company',
+      'FirstName,LastName,Company,Department,Status',
+      'Status,Count,Result',
+      'Active,5,OK',
+      'Alex Morgan met Bea Demo for a review of the change window.',
+      'May, Rose, and Main are street names near the office.',
+      'Contact support if the export fails; contact IT Help Desk otherwise.',
+      'Priya spoke with the vendor and Dmitri joined late.',
+      'NWRH sent the quarterly update to every site.',
+    ]) {
+      expect(cleaned, `expected untouched: ${untouched}`).toContain(untouched);
+    }
   });
 
   it('uses custom terms for organization aliases and normalizes punctuation variants', () => {

@@ -81,8 +81,11 @@ test('PII sample with the scan-toolbar Strict profile redacts labeled PII', asyn
   ]) {
     await expect(preview).toContainText(placeholder);
   }
-  // Free text is never guessed at, even in Strict.
-  await expect(preview).toContainText('escalate to Dr. Demo');
+  // v0.7.1: honorifics are name context now — "Dr. Demo" is redacted while
+  // the surrounding free text stays. Names with NO context are still never
+  // guessed (covered by the negative corpus and the stress fixture).
+  await expect(preview).toContainText('escalate to Dr. [NAME_');
+  await expect(preview).not.toContainText('Dr. Demo');
 });
 
 test('category Redact all / Keep all toggle a whole section', async ({ page }) => {

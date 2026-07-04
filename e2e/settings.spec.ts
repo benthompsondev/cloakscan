@@ -53,6 +53,24 @@ test('detection rules view lists the real registry with a detail panel', async (
   await expect(detail).toContainText('[EMAIL_1]'); // synthetic replacement preview
 });
 
+test('name and organization rules show the coverage note with a Cloak List link', async ({
+  page,
+}) => {
+  await page.goto('/#/settings/rules');
+  await page.getByRole('button', { name: /^Person name/ }).click();
+  const note = page.getByTestId('name-coverage-note');
+  await expect(note).toContainText('may not find every name or organization');
+  await expect(note).toContainText('Hide custom terms');
+
+  await page.getByRole('button', { name: /^Organization name/ }).click();
+  await expect(page.getByTestId('name-coverage-note')).toBeVisible();
+
+  // The link inside the note lands on Profiles & Packs (Cloak Lists live there).
+  await page.getByTestId('name-coverage-note').getByRole('link', { name: 'Cloak List' }).click();
+  await expect(page.getByRole('heading', { name: 'Profiles & Packs' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Cloak Lists' })).toBeVisible();
+});
+
 test('rule search and Strict/Enabled filters narrow the rules list', async ({ page }) => {
   await page.goto('/#/settings/rules');
   await page.getByLabel('Search rules').fill('private key');

@@ -138,16 +138,22 @@ export const RULE_INFO: Record<string, RuleInfo> = {
     sample: 'Username: ademo',
   },
   'person-name': {
-    detects: 'Names in explicit fields, first/last-name fields, clear PowerShell author/contact bylines, and quoted name examples. Strict profile only.',
-    falsePositives: 'A product, group, or title-cased phrase can resemble a person in aggressive name context.',
-    confidence: 'Medium for labeled/byline matches; low for contextual quoted examples.',
+    detects:
+      'Names in explicit fields (including quoted JSON keys), first/last-name fields, recognized CSV columns, clear author/contact bylines, and prose cues such as "prepared by", "as per", or "Contact …". Strict profile only. Detection is contextual: free-text names without such context are NOT guessed — use a Cloak List for people you already know must be hidden.',
+    falsePositives:
+      'A product, group, or title-cased phrase can resemble a person after a prose cue ("written by GitHub Copilot") or an honorific. Review findings and toggle off anything harmless.',
+    confidence:
+      'Low — contextual detection cannot guarantee every name is found or that every finding is a real person.',
     sample: '# Author: Alex Demo',
   },
   'org-name': {
-    detects: 'Organizations in company, employer, department, facility, client, and similar fields, plus organization-shaped comment context. Strict profile only.',
-    falsePositives: 'Product, team, or system names in organization-style fields.',
-    confidence: 'Medium — context-based and intentionally limited to Strict.',
-    sample: '# Script prepared for Contoso Regional Hospital',
+    detects:
+      'Organizations in company, employer, department, facility, client, and similar fields (including quoted JSON keys), recognized CSV columns, copyright lines, and organization-shaped comment context. Strict profile only. Free-text organization mentions without such context are NOT guessed — use a Cloak List for known aliases and acronyms.',
+    falsePositives:
+      'Product, team, or system names in organization-style fields, copyright lines, or strong-suffix phrases.',
+    confidence:
+      'Low — contextual detection cannot guarantee every organization is found or that every finding is a real organization.',
+    sample: 'Copyright (c) 2024 Contoso Regional Hospital',
   },
   'private-key': {
     detects: 'Complete PEM, RSA/EC/DSA, OpenSSH, and PGP private-key blocks from BEGIN to END.',

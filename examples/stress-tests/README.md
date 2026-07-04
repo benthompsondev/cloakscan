@@ -22,6 +22,14 @@ example-health.org
 
 The file includes punctuation variants such as `O’Brien Demo Team` and `O'Brien Demo Team`. Both should use the same custom placeholder.
 
+## names-and-organizations.txt
+
+The fifth file focuses on person and organization detection across PowerShell metadata, JSON exports, CSV files, support logs, and prose. With the **Strict** profile:
+
+- labeled fields, quoted JSON keys, recognized CSV columns, author/contact bylines, prose cues ("prepared by", "as per", "pulled from", "lifted from", "Contact …"), and copyright lines should all be replaced;
+- command syntax (`Get-Process -Name "WindowsTerminal"`, `Name = Get-Random`), CSV files without person/organization columns, and ordinary capitalized prose must come back byte-for-byte unchanged;
+- the last section shows the documented limitation on purpose: single names and acronyms in free prose stay untouched and belong in a Cloak List.
+
 ## Important boundary
 
-Strict mode can detect names and organizations in clear labels, PowerShell metadata, and direct author/contact context. It does not guess every capitalized phrase in normal prose because that would destroy ordinary code comments and documentation. Use a Cloak List for organization aliases, project names, team names, and people you already know must be hidden.
+Strict mode can detect names and organizations in clear labels (including JSON keys and CSV columns), PowerShell metadata, direct author/contact context, prose cues, and copyright lines. It does not guess every capitalized phrase in normal prose because that would destroy ordinary code comments and documentation — and a built-in name dictionary would miss uncommon and international names while falsely redacting ordinary words such as Mark, Bill, May, Rose, or Main. Use a Cloak List for organization aliases, acronyms, project names, team names, and people you already know must be hidden.

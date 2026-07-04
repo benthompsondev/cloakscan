@@ -1,0 +1,66 @@
+SYNTHETIC NAME AND ORGANIZATION STRESS FILE
+All people, companies, and acronyms in this file are fictional.
+
+=== PowerShell metadata and parameters ===
+# Author: Alex Demo
+# Prepared by Bea Example-Person for the identity team
+# Script prepared for Northwind Regional Hospital by Casey Rivera
+# Copyright (c) 2024 St. Brigid's Healthcare Exampleville. All rights reserved.
+$RequestedBy = "Rowan Ashford"
+$Approver = 'Morgan Vance Jr.'
+@{ Owner = "Anna van der Berg"; Company = "Fabrikam & Sons Ltd" }
+
+# These must stay untouched: command syntax, not people.
+Get-Process -Name "WindowsTerminal" | Stop-Process -WhatIf
+Get-Service -Name "ExampleAgent"
+Select-Object -Property Name, Status
+Stop-Service -Name Spooler -Force
+$ServiceName = "Print Spooler"
+Name = Get-Random
+Company = $Company
+
+=== JSON export ===
+{
+  "name": "Priya Raman",
+  "displayName": "Nico D’Angelo",
+  "requestedBy": "Ciara O'Connor",
+  "companyName": "Trey Research Institute",
+  "organization": "Wide World Importers Inc",
+  "department": "Regional Support Services",
+  "facility": "Lamna Healthcare Company",
+  "status": "active",
+  "count": 42
+}
+
+=== CSV export ===
+FirstName,LastName,Company,Department,Status
+Alex,Demo,"Northwind Regional Hospital",Clinical Systems Demo,Active
+"Casey","Rivera","Fabrikam & Sons Ltd","Identity Team",Paused
+Élodie,Marchand,"O'Hara Family Clinic",Intake,Active
+田中,太郎,北風商事,Operations,Active
+
+This header has no person or organization columns, so nothing below it changes:
+Status,Count,Result
+Active,5,OK
+Paused,2,Retry
+
+=== Support log ===
+2026-07-04 09:12:44 ticket notes lifted from Morgan Vance during triage
+2026-07-04 09:14:02 export csv formatted as per Casey R specifications
+2026-07-04 09:15:31 AD group list pulled from Casey Rivera and imported
+2026-07-04 09:17:09 escalation - Contact Rowan Ashford?
+2026-07-04 09:19:55 change approved by Sofía Andrade on Friday
+
+=== Prose that must stay untouched ===
+Alex Morgan met Bea Demo for a review of the change window.
+The Deployment Team approved the maintenance schedule.
+May, Rose, and Main are street names near the office.
+Contact support if the export fails; contact IT Help Desk otherwise.
+The report was created by automation at midnight and pulled from the main branch.
+Copyright statement reviewed for accuracy.
+
+=== Boundary: free-text names need a Cloak List ===
+Priya spoke with the vendor and Dmitri joined late.
+NWRH sent the quarterly update to every site.
+(These two lines are the documented limitation: single names and acronyms in
+free prose have no defensible context, so add them to a Cloak List instead.)
