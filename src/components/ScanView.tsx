@@ -48,6 +48,7 @@ export function ScanView({
   onNotice,
 }: ScanViewProps) {
   const [termsOpen, setTermsOpen] = useState(false);
+  const [guidanceVisible, setGuidanceVisible] = useState(true);
   const termCount = analyzePrivateTerms(session.privateTermsInput, session.termsCaseSensitive)
     .terms.length;
 
@@ -120,20 +121,31 @@ export function ScanView({
         </button>
       </div>
 
-      <aside className="scan-guidance" role="note" aria-label="Detection reminder">
-        <span className="scan-guidance-icon" aria-hidden="true">
-          !
-        </span>
-        <span>
-          <strong>Built-in rules can miss names, organizations, and details unique to your work.</strong>{' '}
-          Review the cleaned text before sharing. Use <strong>Hide custom terms</strong> for this
-          session, or{' '}
-          <a href="#/settings/profiles">
-            Open Cloak Lists
-          </a>{' '}
-          for repeatable exact matches.
-        </span>
-      </aside>
+      {guidanceVisible && (
+        <aside className="scan-guidance" role="note" aria-label="Detection reminder">
+          <span className="scan-guidance-icon" aria-hidden="true">
+            !
+          </span>
+          <span>
+            <strong>Built-in rules can miss names, organizations, and work-specific details.</strong>{' '}
+            Review the cleaned text before sharing. Use <strong>Hide custom terms</strong> for
+            one-off matches, or{' '}
+            <a href="#/settings/profiles">
+              Open Cloak Lists
+            </a>{' '}
+            for repeatable ones.
+          </span>
+          <button
+            type="button"
+            className="scan-guidance-dismiss"
+            aria-label="Hide detection reminder"
+            title="Hide reminder"
+            onClick={() => setGuidanceVisible(false)}
+          >
+            ×
+          </button>
+        </aside>
+      )}
 
       <div className="columns">
         <SourcePanel

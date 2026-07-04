@@ -246,10 +246,11 @@ body {
 }
 
 .scan-guidance {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 9px 40px 9px 12px;
   border: 1px solid rgba(245, 181, 72, 0.28);
   border-radius: 9px;
   background: rgba(245, 181, 72, 0.06);
@@ -280,6 +281,34 @@ body {
   color: #f5b548;
   font-size: 11px;
   font-weight: 700;
+}
+
+.scan-guidance-dismiss {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: 18px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.scan-guidance-dismiss:hover {
+  background: rgba(245, 181, 72, 0.12);
+  color: var(--text);
+}
+
+.scan-guidance-dismiss:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* ---------- dialog ---------- */

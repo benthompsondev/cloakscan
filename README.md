@@ -84,7 +84,7 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Project status
 
-Current release: **v0.7.2**
+Current release: **v0.7.3**
 
 - The Scan screen now gives a visible reminder that built-in rules can miss context-specific details and links directly to Cloak Lists.
 - The Profile Editor can create a Cloak List or Custom Pack without throwing away the profile draft.

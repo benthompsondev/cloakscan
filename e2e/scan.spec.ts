@@ -20,6 +20,17 @@ test('scan screen gives an actionable reminder about detector limits', async ({ 
   await expect(page.getByRole('heading', { name: 'Cloak Lists' })).toBeVisible();
 });
 
+test('detection reminder can be hidden for the current app session', async ({ page }) => {
+  await page.goto('/');
+
+  const reminder = page.getByRole('note', { name: 'Detection reminder' });
+  await reminder.getByRole('button', { name: 'Hide detection reminder' }).click();
+  await expect(reminder).toBeHidden();
+
+  await page.reload();
+  await expect(page.getByRole('note', { name: 'Detection reminder' })).toBeVisible();
+});
+
 test('loads the demo and scans it locally', async ({ page }) => {
   await loadDemoAndScan(page);
 

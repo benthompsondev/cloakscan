@@ -1,7 +1,7 @@
 # CloakGuard for Windows (desktop)
 
 CloakGuard ships to Windows users as **one setup executable**:
-`release/windows/CloakGuard-Setup-0.7.2-x64.exe`. Download it, run it, and
+`release/windows/CloakGuard-Setup-0.7.3-x64.exe`. Download it, run it, and
 launch CloakGuard from the Start Menu. No Node, npm, Rust, source folders,
 manual dependencies, or internet access are needed — the installer even
 bundles the WebView2 runtime installer, so installation itself works offline
