@@ -127,7 +127,8 @@ export function CloakListEditor({ list, remember, onSave, onCancel }: CloakListE
         <h3>Exact terms ({analysis.terms.length})</h3>
         <p className="muted">
           Exact words or phrases — organization names, domains, hostnames, usernames, project
-          names, team names. One per line, matched literally, never as a regular expression.
+          names, team names. One per line, never as a regular expression. Common apostrophe,
+          dash, and horizontal-spacing variants match automatically.
         </p>
         <textarea
           className="terms-input"

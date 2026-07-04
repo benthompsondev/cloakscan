@@ -23,8 +23,32 @@ describe('email detector', () => {
     ]);
   });
 
+  it('finds bare email-domain suffixes and labeled mail domains', () => {
+    const text = [
+      'UPN template: "$alias@example.org"',
+      'MailDomain = "accounts.example.net"',
+      'Accepted-Domain: branch.example.ca',
+    ].join('\n');
+    expect(values(emailDetector, text)).toEqual([
+      '@example.org',
+      'accounts.example.net',
+      'branch.example.ca',
+    ]);
+  });
+
+  it('keeps a full address as one finding instead of a nested domain fragment', () => {
+    expect(values(emailDetector, 'Email: alex.demo@example.org')).toEqual([
+      'alex.demo@example.org',
+    ]);
+  });
+
   it('ignores non-addresses', () => {
-    expect(values(emailDetector, 'not an email: foo@bar, @handle, a@b')).toEqual([]);
+    expect(
+      values(
+        emailDetector,
+        'not an email: foo@bar, @handle, a@b, public example.org, https://example.org',
+      ),
+    ).toEqual([]);
   });
 });
 
@@ -80,10 +104,27 @@ describe('secret detectors', () => {
 });
 
 describe('path detectors', () => {
-  it('finds Windows user paths', () => {
+  it('finds Windows paths, including quoted user paths with spaces', () => {
     expect(
       values(windowsPathDetector, String.raw`Log: C:\Users\alex.demo\AppData\Local\run.log ok`),
     ).toEqual([String.raw`C:\Users\alex.demo\AppData\Local\run.log`]);
+    expect(
+      values(
+        windowsPathDetector,
+        String.raw`Source: "C:\Users\Alex Demo\Documents\Private Project\deploy script.ps1"`,
+      ),
+    ).toEqual([String.raw`C:\Users\Alex Demo\Documents\Private Project\deploy script.ps1`]);
+    expect(
+      values(windowsPathDetector, String.raw`InstallPath = "D:\Operations Tools\Agent\config" ;`),
+    ).toEqual([String.raw`D:\Operations Tools\Agent\config`]);
+  });
+
+  it('stops an unquoted path before the next PowerShell assignment', () => {
+    const text = String.raw`Source: C:\Users\Alex Demo\Documents\deploy.ps1 $Target = D:\Ops\Output`;
+    expect(values(windowsPathDetector, text)).toEqual([
+      String.raw`C:\Users\Alex Demo\Documents\deploy.ps1`,
+      String.raw`D:\Ops\Output`,
+    ]);
   });
 
   it('finds Unix home paths', () => {
@@ -95,8 +136,8 @@ describe('path detectors', () => {
     ]);
   });
 
-  it('ignores non-user paths', () => {
-    expect(values(windowsPathDetector, String.raw`C:\Windows\System32\drivers`)).toEqual([]);
+  it('ignores drive labels and registry providers that are not file paths', () => {
+    expect(values(windowsPathDetector, 'C: and HKLM:\\Software')).toEqual([]);
     expect(values(unixPathDetector, '/var/log/syslog and /etc/hosts')).toEqual([]);
   });
 });

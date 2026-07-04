@@ -64,6 +64,15 @@ describe('term safety', () => {
     const text = 'raw a.b(c)* and aXb(c)* and x+y and xxy';
     expect(detector.detect(text).map((m) => m.value)).toEqual(['a.b(c)*', 'x+y']);
   });
+
+  it('tolerates common apostrophe, dash, and horizontal-spacing variants', () => {
+    const detector = createPrivateTermsDetector(["O'Brien Health", 'North-West Team']);
+    const text = 'O’Brien   Health worked with North–West Team';
+    expect(detector.detect(text).map((m) => m.value)).toEqual([
+      'O’Brien   Health',
+      'North–West Team',
+    ]);
+  });
 });
 
 describe('cloak term scanning', () => {
@@ -75,6 +84,13 @@ describe('cloak term scanning', () => {
     expect(buildCleanText(text, findings)).toBe(
       '[CUSTOM_TERM_1] staff met [CUSTOM_TERM_1] vendors at [CUSTOM_TERM_1] HQ',
     );
+  });
+
+  it('reuses one placeholder across normalized punctuation variants', () => {
+    const text = "O'Brien Health and O’Brien Health";
+    const findings = scanText(text, { privateTerms: parsePrivateTerms("O'Brien Health") });
+    expect(findings).toHaveLength(2);
+    expect(new Set(findings.map((finding) => finding.placeholder)).size).toBe(1);
   });
 
   it('prefers the longest term when terms overlap', () => {

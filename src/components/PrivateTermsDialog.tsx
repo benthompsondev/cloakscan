@@ -77,7 +77,8 @@ export function PrivateTermsDialog({
         <p className="muted dialog-intro">
           Add exact words or phrases — organization names, domains, hostnames, usernames, project
           names, team names, or anything built-in detection misses. One per line, matched
-          literally (never as a regular expression). Each unique term becomes{' '}
+          literally (never as a regular expression); common apostrophe, dash, and spacing variants
+          match automatically. Each unique term becomes{' '}
           <code className="placeholder-code">[CUSTOM_TERM_n]</code> in the output.
         </p>
 

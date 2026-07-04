@@ -42,7 +42,7 @@ test('findings are organized into collapsible category sections', async ({ page 
   await expect(secrets).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByText('Bearer token')).toBeHidden();
   // Other sections stay open.
-  await expect(page.getByText('Windows user path')).toBeVisible();
+  await expect(page.getByText('Windows file path')).toBeVisible();
 
   await secrets.click();
   await expect(page.getByText('Bearer token')).toBeVisible();
@@ -129,6 +129,31 @@ test('imports a synthetic UTF-16 PowerShell script and finds admin shapes', asyn
   await expect(preview).toContainText('[AD_DN_1]');
   await expect(preview).toContainText('[GUID_1]');
   await expect(preview).not.toContainText('demo-secret-not-real');
+});
+
+test('imports the public PowerShell stress fixture without partial paths or mail suffixes', async ({
+  page,
+}) => {
+  const buffer = await import('node:fs').then(({ readFileSync }) =>
+    readFileSync('examples/stress-tests/powershell-identity-and-paths.ps1'),
+  );
+
+  await page.goto('/');
+  await page.getByLabel('Import a text file').setInputFiles({
+    name: 'powershell-identity-and-paths.ps1',
+    mimeType: 'text/plain',
+    buffer,
+  });
+  await page.getByLabel('Detection profile').selectOption('strict');
+  await page.getByRole('button', { name: 'Scan locally' }).click();
+
+  const preview = page.getByRole('region', { name: /Redacted preview/i });
+  await expect(preview).toContainText('[FILE_PATH_1]');
+  await expect(preview).toContainText('[EMAIL_1]');
+  await expect(preview).toContainText('[NAME_1]');
+  await expect(preview).toContainText('[ORG_1]');
+  await expect(preview).not.toContainText('@example-health.org');
+  await expect(preview).not.toContainText('C:\\Users\\');
 });
 
 test('custom terms to hide are redacted and cleared with the session', async ({ page }) => {

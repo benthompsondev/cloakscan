@@ -72,10 +72,10 @@ export const RULE_INFO: Record<string, RuleInfo> = {
     sample: 'Import-Csv "\\\\fs01\\Deploy$\\uploads\\accounts.csv"',
   },
   'windows-user-path': {
-    detects: 'Windows profile paths under \\Users\\, which reveal the local username.',
-    falsePositives: 'Rare. Generic example paths still match.',
-    confidence: 'High — only \\Users\\ paths are targeted.',
-    sample: 'Log: C:\\Users\\alex.demo\\AppData\\Local\\run.log',
+    detects: 'Absolute Windows paths, including quoted paths and paths with spaces.',
+    falsePositives: 'Public example or standard system paths may not need redaction.',
+    confidence: 'High — a drive letter plus backslash path is structurally clear.',
+    sample: 'Log: "C:\\Users\\Alex Demo\\AppData\\Local\\run log.txt"',
   },
   'unix-user-path': {
     detects: 'Unix home-directory paths under /home/ or /Users/.',
@@ -84,10 +84,10 @@ export const RULE_INFO: Record<string, RuleInfo> = {
     sample: 'written to /home/ademo/deploy/run.log',
   },
   email: {
-    detects: 'Standard email addresses.',
-    falsePositives: 'Rare. Role addresses like noreply@ may not need redaction.',
+    detects: 'Email addresses, @domain suffixes used in templates, and labeled mail/UPN domains.',
+    falsePositives: 'Role addresses and public mail-domain examples may not need redaction.',
     confidence: 'High — the format is unambiguous.',
-    sample: 'Contact alex.demo@example.internal today',
+    sample: 'UPN template: "$alias@example.internal"',
   },
   'ps-infrastructure-assignment': {
     detects: 'Quoted host values assigned to infrastructure-style variables like $SmtpServer or $DomainController.',
@@ -138,16 +138,16 @@ export const RULE_INFO: Record<string, RuleInfo> = {
     sample: 'Username: ademo',
   },
   'person-name': {
-    detects: 'Person names (two to four capitalized words) in explicit fields: Name, FullName, DisplayName, Owner, RequestedBy, Manager, Approver, Contact. Strict profile only.',
-    falsePositives: 'Multi-word system or group names in those fields, e.g. Name: Folder Redirection.',
-    confidence: 'Medium — labeled fields only; never guesses names in free text.',
-    sample: 'Owner: Alex Demo',
+    detects: 'Names in explicit fields, first/last-name fields, clear PowerShell author/contact bylines, and quoted name examples. Strict profile only.',
+    falsePositives: 'A product, group, or title-cased phrase can resemble a person in aggressive name context.',
+    confidence: 'Medium for labeled/byline matches; low for contextual quoted examples.',
+    sample: '# Author: Alex Demo',
   },
   'org-name': {
-    detects: 'Organization names in explicit fields: Company, CompanyName, Organization, TenantName, Employer. Strict profile only.',
-    falsePositives: 'Product names entered in company fields.',
-    confidence: 'Medium — labeled fields only.',
-    sample: 'Company: Contoso Health',
+    detects: 'Organizations in company, employer, department, facility, client, and similar fields, plus organization-shaped comment context. Strict profile only.',
+    falsePositives: 'Product, team, or system names in organization-style fields.',
+    confidence: 'Medium — context-based and intentionally limited to Strict.',
+    sample: '# Script prepared for Contoso Regional Hospital',
   },
   'private-key': {
     detects: 'Complete PEM, RSA/EC/DSA, OpenSSH, and PGP private-key blocks from BEGIN to END.',
@@ -224,7 +224,7 @@ export const RULE_INFO: Record<string, RuleInfo> = {
   },
   'private-term': {
     detects:
-      'Your session-only custom terms and reusable Cloak List terms, matched literally as exact words or phrases — never as a regular expression.',
+      'Your session-only custom terms and reusable Cloak List terms, matched as exact words or phrases — never as a regular expression. Common apostrophe, dash, and horizontal-spacing variants are treated as equivalent.',
     falsePositives:
       'Substring collisions inside longer harmless words, only when "Also match inside longer words" is enabled.',
     confidence: 'High — you supplied the term.',

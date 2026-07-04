@@ -1,0 +1,67 @@
+SYNTHETIC SUPPORT LOG - ALL VALUES ARE FAKE
+Generated: 2026-07-04 08:00:00
+Owner: Alex Demo
+RequestedBy: Bea Example
+Company: Northwind Regional Hospital
+Department: Clinical Systems Demo
+Contact: Chris Sample
+Email: chris.sample@example-health.org
+UPN template: "$alias@example-health.org"
+MailDomain = "accounts.example-health.org"
+
+2026-07-04 08:00:01 [INFO] Ticket INC104892 opened by username: ademo
+2026-07-04 08:00:02 [INFO] Related change CHG543210 and work item OPS-2214
+2026-07-04 08:00:03 [INFO] Source host ws-144.example.internal
+2026-07-04 08:00:04 [INFO] Domain controller dc01.example.internal
+2026-07-04 08:00:05 [INFO] Private address 10.42.16.28
+2026-07-04 08:00:06 [INFO] Backup address 172.16.5.10
+2026-07-04 08:00:07 [INFO] Gateway 2001:db8::42
+2026-07-04 08:00:08 [INFO] URL https://admin.example.internal/api/v1/users
+2026-07-04 08:00:09 [INFO] Tenant northwind-demo.onmicrosoft.com
+2026-07-04 08:00:10 [INFO] User path C:\Users\Alex Demo\AppData\Local\Temp\support bundle.log
+2026-07-04 08:00:11 [INFO] Tool path "C:\Program Files\Example Agent\agent.exe"
+2026-07-04 08:00:12 [INFO] OutputPath = "D:\Operations Tools\Support Reports\case output.txt"
+2026-07-04 08:00:13 [INFO] Share \\fs01.example.internal\Support$\Escalations\INC104892
+2026-07-04 08:00:14 [INFO] Unix copy /home/ademo/private/support.log
+2026-07-04 08:00:15 [INFO] macOS copy /Users/ademo/Documents/support notes.txt
+
+DisplayName: Alex T.
+FirstName: Alex
+LastName: Demo
+Manager: Bea Example
+Approver: Jean-Luc Picard
+Employer: Example Community Health
+Facility: Northwind Regional Hospital
+BusinessUnit: Regional Support Services
+Phone: (555) 123-4567
+Mobile: +1 555.222.3344 x89
+Address: 123 Demo Street, Exampleville
+DOB: 1990-01-31
+MRN: 12-345678
+PatientID: AB123456
+
+Primary email alex.demo@example-health.org
+Secondary email alex.demo@branch.example.ca
+Distribution suffix @example-health.org
+Legacy suffix @legacy.example.ca
+Accepted-Domain: accounts.example-health.org
+
+TenantId: 11111111-2222-3333-4444-555555555555
+ClientId: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+Authorization: Bearer DEMO_NOT_REAL_TOKEN_1234567890
+password = "demo-support-password-not-real"
+client_secret: "demo-client-secret-not-real"
+postgres://svc_demo:demo-pw@db01.example.internal:5432/support
+
+2026-07-04 08:01:00 [WARN] Retry from 192.168.50.25
+2026-07-04 08:01:01 [WARN] Contact alex.demo@example-health.org
+2026-07-04 08:01:02 [WARN] Read C:\Users\Bea Example\Desktop\support package.zip
+2026-07-04 08:01:03 [WARN] Copy to D:\Support Tools\Pending Review
+2026-07-04 08:01:04 [WARN] Escalate REQ123456
+2026-07-04 08:01:05 [WARN] Server relay01.example.internal unavailable
+
+2026-07-04 08:02:00 [INFO] Public documentation https://example.com/help is intentionally public
+2026-07-04 08:02:01 [INFO] Loopback 127.0.0.1 is low sensitivity
+2026-07-04 08:02:02 [INFO] Status Deployment Complete should stay ordinary text
+2026-07-04 08:02:03 [INFO] Variable $GeneratedPassword should not be treated as a literal secret
+2026-07-04 08:02:04 [INFO] End of synthetic support log

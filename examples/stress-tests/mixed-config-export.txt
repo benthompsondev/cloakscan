@@ -1,0 +1,79 @@
+SYNTHETIC MIXED CONFIGURATION AND EXPORT
+
+[identity]
+Name = "Alex"
+FullName = "Alex Demo"
+FirstName = "Alex"
+LastName = "Demo"
+Owner = "Bea Example"
+Manager = "Chris Sample"
+Company = "Northwind Regional Hospital"
+Organization = "Example Community Health"
+Department = "Clinical Systems Demo"
+Facility = "Northwind Regional Hospital"
+Email = "alex.demo@example-health.org"
+UpnSuffix = "accounts.example-health.org"
+MailDomain = "mail.example-health.org"
+Template = "$alias@example-health.org"
+Username = "ademo"
+
+[paths]
+UserProfile = "C:\Users\Alex Demo"
+SourcePath = "C:\Users\Alex Demo\Documents\Private Project\input data.csv"
+InstallPath = "C:\Program Files\Example Agent\agent.exe"
+OutputPath = "D:\Operations Tools\Reports\daily output.csv"
+ArchivePath = D:\Operations Tools\Reports\Archive $BackupPath = E:\Private\Backup
+SharePath = "\\fs01.example.internal\Reports$\Private\Daily"
+LinuxPath = "/home/ademo/private/report.csv"
+MacPath = "/Users/ademo/Documents/private report.csv"
+
+[network]
+PrimaryServer = "app01.example.internal"
+DatabaseServer = "db01.example.internal"
+SmtpServer = "relay01.example.internal"
+PrivateIp = "10.42.16.28"
+BackupIp = "172.16.5.10"
+Ipv6Gateway = "2001:db8::42"
+AdminUrl = "https://admin.example.internal/api/v1/report"
+TenantDomain = "northwind-demo.onmicrosoft.com"
+
+[cloud]
+TenantId = "11111111-2222-3333-4444-555555555555"
+ClientId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+SubscriptionId = "99999999-8888-7777-6666-555555555555"
+Authorization = "Bearer DEMO_NOT_REAL_TOKEN_1234567890"
+
+[secrets]
+password = "demo-password-not-real"
+passphrase = "demo-passphrase-not-real"
+client_secret = "demo-client-secret-not-real"
+access_token = "demo-access-token-not-real-123456"
+generated_password = $GeneratedPassword
+password_command = Get-RandomPassword
+
+[personal]
+Phone = "(555) 123-4567"
+Mobile = "+1 555.222.3344 x89"
+Address = "123 Demo Street, Exampleville"
+DateOfBirth = "1990-01-31"
+MRN = "12-345678"
+PatientID = "AB123456"
+
+{
+  "displayName": "Jean-Luc Picard",
+  "companyName": "Northwind Regional Hospital",
+  "department": "Regional Support Services",
+  "userPrincipalName": "jean.picard@example-health.org",
+  "emailSuffix": "@example-health.org",
+  "homePath": "C:\\Users\\Jean-Luc Picard\\Documents\\Private Notes",
+  "ticket": "INC104892",
+  "change": "CHG543210",
+  "server": "api01.example.internal",
+  "privateAddress": "192.168.50.25"
+}
+
+CSV-LIKE EXPORT
+DisplayName,UserPrincipalName,Company,Department,Phone
+"Alex Demo","alex.demo@example-health.org","Northwind Regional Hospital","Clinical Systems Demo","(555) 123-4567"
+"Bea Example","bea.example@branch.example.ca","Example Community Health","Regional Support Services","555-222-3344"
+"Chris Sample","chris.sample@example-health.org","Northwind Regional Hospital","Identity Team","555-333-4455"

@@ -84,6 +84,36 @@ function escapeRegExp(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function flexibleLiteralPattern(literal: string): string {
+  let pattern = '';
+  let inWhitespace = false;
+  for (const char of literal.normalize('NFC')) {
+    if (/[ \t\u00a0]/u.test(char)) {
+      if (!inWhitespace) pattern += '[ \\t\\u00a0]+';
+      inWhitespace = true;
+      continue;
+    }
+    inWhitespace = false;
+    if (/['\u2018\u2019]/u.test(char)) {
+      pattern += "['\\u2018\\u2019]";
+    } else if (/[-\u2010-\u2015]/u.test(char)) {
+      pattern += '[-\\u2010-\\u2015]';
+    } else {
+      pattern += escapeRegExp(char);
+    }
+  }
+  return pattern;
+}
+
+function normalizeTermValue(value: string, caseSensitive: boolean): string {
+  const canonical = value
+    .normalize('NFC')
+    .replace(/[\u2018\u2019]/gu, "'")
+    .replace(/[\u2010-\u2015]/gu, '-')
+    .replace(/[ \t\u00a0]+/gu, ' ');
+  return caseSensitive ? canonical : canonical.toLocaleLowerCase();
+}
+
 /**
  * Build a one-off detector for a term list. `sourceName` distinguishes the
  * session dialog from pack-owned term sets in the findings list.
@@ -93,9 +123,9 @@ export function createPrivateTermsDetector(
   options: TermsOptions = DEFAULT_TERMS_OPTIONS,
   sourceName = 'Custom term to hide',
 ): Detector {
-  const flags = options.caseSensitive ? 'g' : 'gi';
-  const boundaryBefore = options.matchInsideWords ? '' : '(?<![A-Za-z0-9])';
-  const boundaryAfter = options.matchInsideWords ? '' : '(?![A-Za-z0-9])';
+  const flags = options.caseSensitive ? 'gu' : 'giu';
+  const boundaryBefore = options.matchInsideWords ? '' : '(?<![\\p{L}\\p{N}])';
+  const boundaryAfter = options.matchInsideWords ? '' : '(?![\\p{L}\\p{N}])';
 
   return {
     id: 'private-term',
@@ -108,11 +138,14 @@ export function createPrivateTermsDetector(
     priority: 58,
     explanation: 'An exact word or phrase you chose to cloak.',
     // Case variants share one placeholder in case-insensitive mode.
-    normalizeValue: (value) => (options.caseSensitive ? value : value.toLowerCase()),
+    normalizeValue: (value) => normalizeTermValue(value, options.caseSensitive),
     detect: (text): RawMatch[] => {
       const matches: RawMatch[] = [];
       for (const term of terms) {
-        const re = new RegExp(`${boundaryBefore}${escapeRegExp(term)}${boundaryAfter}`, flags);
+        const re = new RegExp(
+          `${boundaryBefore}${flexibleLiteralPattern(term)}${boundaryAfter}`,
+          flags,
+        );
         let m: RegExpExecArray | null;
         while ((m = re.exec(text)) !== null) {
           matches.push({

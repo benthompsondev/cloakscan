@@ -24,6 +24,12 @@ text before sharing it.
   property ending in `Server`, `Host`, `Hostname`, `Endpoint`, `Uri`, `Url`,
   `ConnectionUri`, `Domain`, `Fqdn`, or `SmtpServer` is treated as
   infrastructure even when it uses an ordinary public DNS suffix.
+- Email templates are handled without damaging PowerShell variables. In
+  `"$alias@example.org"`, CloakGuard replaces only `@example.org`; complete
+  addresses and labeled mail/UPN domain fields are also detected.
+- Absolute Windows paths are redacted as a whole, including quoted paths and
+  paths containing spaces. Unquoted paths stop before a following PowerShell
+  assignment so one finding cannot swallow neighboring code.
 
 ## v0.5 coverage additions
 
@@ -70,8 +76,12 @@ text before sharing it.
 - Contextual infrastructure and secret assignment rules only replace quoted
   literals. Values assembled from variables or expressions are left alone to
   preserve code semantics.
-- Free-text names and organization-specific terms are not guessed. Use
+- Strict detects names and organizations in explicit fields, first/last-name
+  fields, clear author/contact context, and conservative organization-shaped
+  comments. Arbitrary free-text names and organization-specific terms are not
+  guessed. Use
   **Hide custom terms** (session-only) or a reusable **Cloak List** when a sensitive
-  value has no reliable generic structure. Cloak terms are matched literally —
-  never as regex — as exact words/phrases by default; over-length terms are
+  value has no reliable generic structure. Cloak terms are never regex and use
+  exact word/phrase boundaries by default. Common apostrophe, dash, and
+  horizontal-spacing variants are normalized, and over-length terms are
   skipped whole rather than truncated.
