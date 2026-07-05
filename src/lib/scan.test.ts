@@ -88,6 +88,8 @@ describe('session state', () => {
       privateTermsInput: '',
       termsCaseSensitive: false,
       termsMatchInsideWords: false,
+      termsFormat: { id: 'indexed', customTemplate: '[{TYPE}_{INDEX}]' },
+      termsLabel: 'CUSTOM_TERM',
       findings: [],
       hasScanned: false,
     });

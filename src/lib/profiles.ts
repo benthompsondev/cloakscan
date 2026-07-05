@@ -1,5 +1,5 @@
 import { detectors } from './detectors';
-import { packById } from './packs';
+import { BUILT_IN_PACKS, packById } from './packs';
 import type { CustomPack } from './customPacks';
 import { DEFAULT_TEMPLATE, type RedactionChoice } from './redaction';
 
@@ -18,7 +18,7 @@ import { DEFAULT_TEMPLATE, type RedactionChoice } from './redaction';
  */
 
 export type CoreMode = 'balanced' | 'strict';
-export type ProfileId = CoreMode | 'custom'; // legacy alias, kept for v1 storage migration
+export type ProfileId = CoreMode | 'maximum' | 'code-secrets' | 'custom';
 
 export interface ProfileConfig {
   id: string;
@@ -35,7 +35,15 @@ export interface ProfileConfig {
   builtIn?: boolean;
 }
 
-export const BALANCED_PROFILE: ProfileConfig = Object.freeze<ProfileConfig>({
+function freezeProfile(profile: ProfileConfig): ProfileConfig {
+  Object.freeze(profile.packIds);
+  Object.freeze(profile.customPackIds);
+  Object.freeze(profile.overrides);
+  Object.freeze(profile.format);
+  return Object.freeze(profile);
+}
+
+export const BALANCED_PROFILE: ProfileConfig = freezeProfile({
   id: 'balanced',
   name: 'Balanced',
   core: 'balanced',
@@ -46,7 +54,7 @@ export const BALANCED_PROFILE: ProfileConfig = Object.freeze<ProfileConfig>({
   builtIn: true,
 });
 
-export const STRICT_PROFILE: ProfileConfig = Object.freeze<ProfileConfig>({
+export const STRICT_PROFILE: ProfileConfig = freezeProfile({
   id: 'strict',
   name: 'Strict',
   core: 'strict',
@@ -57,7 +65,43 @@ export const STRICT_PROFILE: ProfileConfig = Object.freeze<ProfileConfig>({
   builtIn: true,
 });
 
-export const BUILT_IN_PROFILES: readonly ProfileConfig[] = [BALANCED_PROFILE, STRICT_PROFILE];
+export const MAXIMUM_PROFILE: ProfileConfig = freezeProfile({
+  id: 'maximum',
+  name: 'Maximum',
+  core: 'strict',
+  packIds: BUILT_IN_PACKS.map((pack) => pack.id),
+  customPackIds: [],
+  overrides: {},
+  format: { id: 'indexed', customTemplate: DEFAULT_TEMPLATE },
+  builtIn: true,
+});
+
+export const CODE_SECRETS_PROFILE: ProfileConfig = freezeProfile({
+  id: 'code-secrets',
+  name: 'Code & secrets',
+  core: 'strict',
+  packIds: [],
+  customPackIds: [],
+  overrides: Object.fromEntries(
+    detectors.filter((detector) => detector.category === 'personal').map((detector) => [detector.id, false]),
+  ),
+  format: { id: 'indexed', customTemplate: DEFAULT_TEMPLATE },
+  builtIn: true,
+});
+
+export const BUILT_IN_PROFILES: readonly ProfileConfig[] = Object.freeze([
+  BALANCED_PROFILE,
+  STRICT_PROFILE,
+  MAXIMUM_PROFILE,
+  CODE_SECRETS_PROFILE,
+]);
+
+export const BUILT_IN_PROFILE_DESCRIPTIONS: Readonly<Record<string, string>> = Object.freeze({
+  balanced: 'The standard detector set for everyday code, logs, and support text.',
+  strict: 'Balanced plus context-based personal information rules. Expect more review.',
+  maximum: 'Every built-in rule and country pack. Most coverage and most review.',
+  'code-secrets': 'Credentials, infrastructure, identifiers, and paths without prose PII rules.',
+});
 
 /** Per-rule enabled map for a Core mode alone (no packs, no overrides). */
 export function profileRuleStates(core: CoreMode): Record<string, boolean> {

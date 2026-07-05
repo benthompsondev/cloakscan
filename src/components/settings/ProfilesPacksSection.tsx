@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { BUILT_IN_PACKS, PACK_DISCLAIMER, type PackDefinition } from '../../lib/packs';
-import { enabledRuleIds, resolveRuleStates, MAX_PROFILES } from '../../lib/profiles';
+import {
+  BUILT_IN_PROFILES,
+  enabledRuleIds,
+  resolveRuleStates,
+  MAX_PROFILES,
+} from '../../lib/profiles';
 import { MAX_CUSTOM_PACKS, isCloakList, type CustomPack } from '../../lib/customPacks';
 import type { SettingsProps } from './SettingsView';
 import { CustomPackEditor } from './CustomPackEditor';
@@ -89,8 +94,7 @@ export function ProfilesPacksSection(props: SettingsProps) {
         <h3>Profiles</h3>
         <ul className="profile-rows" aria-label="Profiles">
           {[
-            { id: 'balanced', name: 'Balanced', builtIn: true },
-            { id: 'strict', name: 'Strict', builtIn: true },
+            ...BUILT_IN_PROFILES,
             ...workspace.profiles,
             ...(workspace.activeProfileId === 'unsaved' && workspace.unsaved
               ? [{ id: 'unsaved', name: 'Unsaved configuration', builtIn: false }]

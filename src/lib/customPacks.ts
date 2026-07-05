@@ -1,4 +1,5 @@
 import type { Category, Detector, RawMatch, Severity } from './types';
+import type { RedactionChoice } from './redaction';
 
 /**
  * Custom packs: user-defined bundles of registry detector ids, safe custom
@@ -33,6 +34,10 @@ export interface PackTerms {
   matchInsideWords: boolean;
   /** Explicit, separate opt-in to persist term VALUES with the pack. */
   saveTerms: boolean;
+  /** Optional Cloak List-only output format. Missing means indexed default. */
+  termFormat?: RedactionChoice;
+  /** Optional Cloak List-only placeholder label. Missing means CUSTOM_TERM. */
+  termLabel?: string;
 }
 
 export interface CustomPack {

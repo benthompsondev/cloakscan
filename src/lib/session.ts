@@ -1,4 +1,5 @@
 import type { Finding } from './types';
+import { DEFAULT_CUSTOM_TERM_LABEL, DEFAULT_TEMPLATE, type RedactionChoice } from './redaction';
 
 /**
  * All user content lives in this in-memory shape and nowhere else.
@@ -12,6 +13,10 @@ export interface SessionState {
   /** Session-only custom-term matching options (also memory-only). */
   termsCaseSensitive: boolean;
   termsMatchInsideWords: boolean;
+  /** Session-only output format for custom terms. */
+  termsFormat: RedactionChoice;
+  /** Session-only placeholder label for custom terms. */
+  termsLabel: string;
   findings: Finding[];
   hasScanned: boolean;
 }
@@ -24,6 +29,8 @@ export function createEmptySession(): SessionState {
     // Exact words/phrases are the safe default; inside-word matching is an
     // explicit, more aggressive opt-in.
     termsMatchInsideWords: false,
+    termsFormat: { id: 'indexed', customTemplate: DEFAULT_TEMPLATE },
+    termsLabel: DEFAULT_CUSTOM_TERM_LABEL,
     findings: [],
     hasScanned: false,
   };

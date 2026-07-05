@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { detectors } from './detectors';
 import {
   BALANCED_PROFILE,
+  BUILT_IN_PROFILES,
+  CODE_SECRETS_PROFILE,
+  MAXIMUM_PROFILE,
   STRICT_PROFILE,
   enabledRuleIds,
   profileForStates,
   profileRuleStates,
+  resolveRuleStates,
   sameConfig,
   type ProfileConfig,
 } from './profiles';
+import { BUILT_IN_PACKS } from './packs';
 import { scanText } from './scan';
 import { DEMO_TEXT } from './demo';
 
@@ -32,6 +37,34 @@ describe('profiles', () => {
     expect(profileForStates(profileRuleStates('strict'))).toBe('strict');
     const custom = { ...profileRuleStates('balanced'), email: false };
     expect(profileForStates(custom)).toBe('custom');
+  });
+
+  it('Maximum enables every registered detector through Strict plus all packs', () => {
+    expect(MAXIMUM_PROFILE.core).toBe('strict');
+    expect(MAXIMUM_PROFILE.packIds).toEqual(BUILT_IN_PACKS.map((pack) => pack.id));
+    const states = resolveRuleStates(MAXIMUM_PROFILE);
+    expect(detectors.every((detector) => states[detector.id])).toBe(true);
+  });
+
+  it('Code & secrets keeps code-shaped rules on and prose PII off', () => {
+    const states = resolveRuleStates(CODE_SECRETS_PROFILE);
+    for (const detector of detectors) {
+      if (detector.category === 'personal') {
+        expect(states[detector.id], detector.id).toBe(false);
+      } else if (!detector.packOnly) {
+        expect(states[detector.id], detector.id).toBe(true);
+      }
+    }
+  });
+
+  it('deep-freezes every built-in profile and its mutable-looking fields', () => {
+    for (const profile of BUILT_IN_PROFILES) {
+      expect(Object.isFrozen(profile)).toBe(true);
+      expect(Object.isFrozen(profile.packIds)).toBe(true);
+      expect(Object.isFrozen(profile.customPackIds)).toBe(true);
+      expect(Object.isFrozen(profile.overrides)).toBe(true);
+      expect(Object.isFrozen(profile.format)).toBe(true);
+    }
   });
 });
 

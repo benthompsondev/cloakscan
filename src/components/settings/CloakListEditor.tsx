@@ -9,6 +9,13 @@ import {
   QUICK_CLOAK_EXAMPLE_BEFORE,
   QUICK_CLOAK_EXAMPLE_TERMS,
 } from '../PrivateTermsDialog';
+import { FormatPicker } from './FormatsSection';
+import {
+  DEFAULT_CUSTOM_TERM_LABEL,
+  DEFAULT_TEMPLATE,
+  sanitizePlaceholderLabel,
+  templateFor,
+} from '../../lib/redaction';
 
 interface CloakListEditorProps {
   list: CustomPack | null; // null = create new
@@ -56,7 +63,20 @@ export function CloakListEditor({ list, remember, onSave, onCancel }: CloakListE
     scanText(QUICK_CLOAK_EXAMPLE_BEFORE, {
       enabledDetectorIds: [],
       extraDetectors: [
-        createPrivateTermsDetector(QUICK_CLOAK_EXAMPLE_TERMS, draft.terms, 'Cloak List term'),
+        createPrivateTermsDetector(
+          QUICK_CLOAK_EXAMPLE_TERMS,
+          {
+            ...draft.terms,
+            template: templateFor(
+              draft.terms.termFormat ?? {
+                id: 'indexed',
+                customTemplate: DEFAULT_TEMPLATE,
+              },
+            ),
+            label: draft.terms.termLabel,
+          },
+          'Cloak List term',
+        ),
       ],
     }),
   );
@@ -140,6 +160,52 @@ export function CloakListEditor({ list, remember, onSave, onCancel }: CloakListE
           placeholder={'One term per line, e.g.\nContoso General\ncontoso.org\nSRV-APP01'}
         />
         <TermsFeedback analysis={analysis} />
+
+        <div className="terms-format-control">
+          <h3>How these terms are cloaked</h3>
+          <FormatPicker
+            choice={
+              draft.terms.termFormat ?? {
+                id: 'indexed',
+                customTemplate: DEFAULT_TEMPLATE,
+              }
+            }
+            onChange={(termFormat) =>
+              setDraft({ ...draft, terms: { ...draft.terms, termFormat } })
+            }
+            compact
+            showPreview={false}
+            ariaLabel="Cloak List redaction format"
+          />
+          <label>
+            <strong>Placeholder label</strong>
+            <input
+              className="template-input"
+              value={draft.terms.termLabel ?? DEFAULT_CUSTOM_TERM_LABEL}
+              maxLength={20}
+              spellCheck={false}
+              aria-label="Cloak List placeholder label"
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  terms: { ...draft.terms, termLabel: event.target.value },
+                })
+              }
+              onBlur={() =>
+                setDraft({
+                  ...draft,
+                  terms: {
+                    ...draft.terms,
+                    termLabel: sanitizePlaceholderLabel(
+                      draft.terms.termLabel,
+                      DEFAULT_CUSTOM_TERM_LABEL,
+                    ),
+                  },
+                })
+              }
+            />
+          </label>
+        </div>
 
         <div className="terms-toggles">
           <label className="terms-toggle-row">

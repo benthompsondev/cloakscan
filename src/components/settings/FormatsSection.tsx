@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import {
   FORMAT_PRESETS,
   templateFor,
@@ -22,10 +22,19 @@ const PREVIEW_SAMPLE =
 export function FormatPicker({
   choice,
   onChange,
+  compact = false,
+  showPreview = true,
+  ariaLabel = 'Redaction format',
 }: {
   choice: RedactionChoice;
   onChange: (choice: RedactionChoice) => void;
+  compact?: boolean;
+  showPreview?: boolean;
+  ariaLabel?: string;
 }) {
+  const generatedInputId = useId();
+  const inputId = compact ? generatedInputId : 'custom-template';
+  const radioName = useId();
   const templateError =
     choice.id === 'custom' ? validateTemplate(choice.customTemplate) : null;
 
@@ -41,12 +50,16 @@ export function FormatPicker({
 
   return (
     <>
-      <div role="radiogroup" aria-label="Redaction format" className="profile-list">
+      <div
+        role="radiogroup"
+        aria-label={ariaLabel}
+        className={`profile-list${compact ? ' format-picker-compact' : ''}`}
+      >
         {FORMAT_PRESETS.map((f) => (
           <label key={f.id} className={`profile-option ${choice.id === f.id ? 'is-active' : ''}`}>
             <input
               type="radio"
-              name="format"
+              name={radioName}
               checked={choice.id === f.id}
               onChange={() => select(f.id)}
             />
@@ -60,11 +73,11 @@ export function FormatPicker({
 
       {choice.id === 'custom' && (
         <div className="template-editor">
-          <label htmlFor="custom-template">
+          <label htmlFor={inputId}>
             <strong>Custom template</strong>
           </label>
           <input
-            id="custom-template"
+            id={inputId}
             type="text"
             className="template-input"
             value={choice.customTemplate}
@@ -85,14 +98,18 @@ export function FormatPicker({
         </div>
       )}
 
-      <h3>Live preview (synthetic data)</h3>
-      <div className="format-preview">
-        <code className="rule-preview-before">{PREVIEW_SAMPLE}</code>
-        <span className="arrow" aria-hidden="true">
-          →
-        </span>
-        <code className="rule-preview-after">{preview}</code>
-      </div>
+      {showPreview && (
+        <>
+          <h3>Live preview (synthetic data)</h3>
+          <div className="format-preview">
+            <code className="rule-preview-before">{PREVIEW_SAMPLE}</code>
+            <span className="arrow" aria-hidden="true">
+              →
+            </span>
+            <code className="rule-preview-after">{preview}</code>
+          </div>
+        </>
+      )}
     </>
   );
 }

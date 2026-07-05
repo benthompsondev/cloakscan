@@ -1,6 +1,10 @@
 import type { Confidence, Detector, Finding, RawMatch } from './types';
 import { detectors } from './detectors';
-import { createPrivateTermsDetector, DEFAULT_TERMS_OPTIONS, type TermsOptions } from './customTerms';
+import {
+  createPrivateTermsDetector,
+  DEFAULT_TERMS_OPTIONS,
+  type PrivateTermsDetectorOptions,
+} from './customTerms';
 import { findPowerShellRegexRanges } from './protectedRanges';
 import { DEFAULT_TEMPLATE, renderPlaceholder } from './redaction';
 
@@ -13,7 +17,7 @@ export interface ScanOptions {
   /** Session-only literal terms; matched via an extra detector. */
   privateTerms?: string[];
   /** Matching options for the session-only custom terms. */
-  termsOptions?: TermsOptions;
+  termsOptions?: PrivateTermsDetectorOptions;
   /**
    * Detector ids allowed to run. Defaults to the Balanced profile: every
    * registered rule except strict-only and pack-only ones.
@@ -90,12 +94,13 @@ export function scanText(text: string, options: ScanOptions = {}): Finding[] {
 
   return resolved.map((c, index) => {
     const normalized = c.detector.normalizeValue ? c.detector.normalizeValue(c.value) : c.value;
-    const key = `${c.detector.label} ${normalized}`;
+    const effectiveTemplate = c.detector.placeholderTemplate ?? placeholderTemplate;
+    const key = `${effectiveTemplate}\u0000${c.detector.label}\u0000${normalized}`;
     let placeholder = placeholderByValue.get(key);
     if (!placeholder) {
       const next = (counters.get(c.detector.label) ?? 0) + 1;
       counters.set(c.detector.label, next);
-      placeholder = renderPlaceholder(placeholderTemplate, c.detector.label, next);
+      placeholder = renderPlaceholder(effectiveTemplate, c.detector.label, next);
       placeholderByValue.set(key, placeholder);
     }
     return {

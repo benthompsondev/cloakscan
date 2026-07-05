@@ -11,7 +11,7 @@ import {
   savePreferencesV2,
 } from './preferences';
 import { emptyPackTerms, type CustomPack } from './customPacks';
-import { BALANCED_PROFILE, type ProfileConfig } from './profiles';
+import { BALANCED_PROFILE, profileRuleStates, type ProfileConfig } from './profiles';
 
 function fakeStorage(): Storage {
   const map = new Map<string, string>();
@@ -115,6 +115,53 @@ describe('v2 persistence', () => {
     expect(loaded.customPacks[0].terms.values).toEqual(['contoso']);
   });
 
+  it('round-trips an optional Cloak List format and sanitized label', () => {
+    savePreferencesV2({
+      version: 2,
+      activeProfileId: 'balanced',
+      profiles: [],
+      customPacks: [
+        customPack({
+          terms: {
+            ...emptyPackTerms(),
+            termFormat: { id: 'custom', customTemplate: '<{TYPE}:{INDEX}>' },
+            termLabel: 'client',
+          },
+        }),
+      ],
+    });
+    const terms = loadPreferencesV2()!.customPacks[0].terms;
+    expect(terms.termFormat).toEqual({
+      id: 'custom',
+      customTemplate: '<{TYPE}:{INDEX}>',
+    });
+    expect(terms.termLabel).toBe('CLIENT');
+  });
+
+  it('falls back safely for invalid stored Cloak List format fields', () => {
+    const pack = customPack();
+    const cleaned = sanitizeV2({
+      version: 2,
+      activeProfileId: 'balanced',
+      profiles: [],
+      customPacks: [
+        {
+          ...pack,
+          terms: {
+            ...pack.terms,
+            termFormat: { id: 'custom', customTemplate: '{MATCHED_VALUE}' },
+            termLabel: 'not valid!',
+          },
+        },
+      ],
+    })!;
+    expect(cleaned.customPacks[0].terms.termFormat).toEqual({
+      id: 'indexed',
+      customTemplate: '[{TYPE}_{INDEX}]',
+    });
+    expect(cleaned.customPacks[0].terms.termLabel).toBe('CUSTOM_TERM');
+  });
+
   it('never persists term values without the explicit per-pack opt-in', () => {
     savePreferencesV2({
       version: 2,
@@ -214,11 +261,9 @@ describe('v1 to v2 migration', () => {
 
   it('maps clean balanced/strict v1 prefs to the built-in profile id', () => {
     expect(migrateV1(v1())!.activeProfileId).toBe('balanced');
-    const strictStates: Record<string, boolean> = {};
-    // strict = balanced plus the strict-only rules
-    for (const id of ['person-name', 'org-name', 'phone-number', 'physical-address', 'date-of-birth', 'canadian-sin', 'health-identifier']) {
-      strictStates[id] = true;
-    }
+    const strictStates = Object.fromEntries(
+      Object.entries(profileRuleStates('strict')).filter(([, enabled]) => enabled),
+    );
     expect(migrateV1(v1({ ruleStates: strictStates }))!.activeProfileId).toBe('strict');
   });
 

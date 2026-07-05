@@ -92,7 +92,7 @@ test('strict profile detects labeled person and org names; balanced does not', a
   await expect(preview).toContainText('Owner: Alex Demo'); // balanced keeps it
 
   await page.getByRole('link', { name: 'Settings' }).click();
-  await page.getByRole('radio', { name: /Strict/ }).check();
+  await page.getByRole('radio', { name: /^Strict/ }).check();
   await page.getByRole('link', { name: 'Scan' }).click();
   await page.getByRole('button', { name: 'Scan locally' }).click();
   await expect(preview).toContainText('Owner: [NAME_1]');
@@ -171,7 +171,7 @@ test('preference opt-in stores only the allowlisted object; opt-out deletes it',
 
 test('remembered preferences survive reload; content never does', async ({ page }) => {
   await page.goto('/#/settings/general');
-  await page.getByRole('radio', { name: /Strict/ }).check();
+  await page.getByRole('radio', { name: /^Strict/ }).check();
   await page.getByRole('switch', { name: 'Remember preferences on this device' }).click();
 
   await page.goto('/');

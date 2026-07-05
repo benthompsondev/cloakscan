@@ -1,21 +1,12 @@
 import { detectors } from '../../lib/detectors';
-import { enabledRuleIds, resolveRuleStates } from '../../lib/profiles';
+import {
+  BUILT_IN_PROFILES,
+  BUILT_IN_PROFILE_DESCRIPTIONS,
+  enabledRuleIds,
+  resolveRuleStates,
+} from '../../lib/profiles';
 import { APP_VERSION } from '../../lib/version';
 import type { SettingsProps } from './SettingsView';
-
-const CORE_PRESETS: { id: 'balanced' | 'strict'; name: string; description: string }[] = [
-  {
-    id: 'balanced',
-    name: 'Balanced',
-    description: 'The standard detector set. Secrets, infrastructure, identity, and path rules.',
-  },
-  {
-    id: 'strict',
-    name: 'Strict',
-    description:
-      'Everything in Balanced, plus labeled-field PII rules (names, phones, addresses, birth dates, SINs, health identifiers). More findings, more review.',
-  },
-];
 
 export function GeneralSection({
   workspace,
@@ -39,7 +30,7 @@ export function GeneralSection({
       <div className="settings-body">
         <h3>Core detection mode</h3>
         <div role="radiogroup" aria-label="Detection profile" className="profile-list">
-          {CORE_PRESETS.map((p) => (
+          {BUILT_IN_PROFILES.map((p) => (
             <label key={p.id} className={`profile-option ${workspace.activeProfileId === p.id ? 'is-active' : ''}`}>
               <input
                 type="radio"
@@ -49,7 +40,9 @@ export function GeneralSection({
               />
               <span>
                 <strong>{p.name}</strong>
-                <span className="muted profile-desc">{p.description}</span>
+                <span className="muted profile-desc">
+                  {BUILT_IN_PROFILE_DESCRIPTIONS[p.id]}
+                </span>
               </span>
             </label>
           ))}

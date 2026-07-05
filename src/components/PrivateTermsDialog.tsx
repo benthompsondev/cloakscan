@@ -1,9 +1,15 @@
 import { useEffect, useRef } from 'react';
 import type { SessionState } from '../lib/session';
-import { analyzePrivateTerms } from '../lib/customTerms';
+import { analyzePrivateTerms, createPrivateTermsDetector } from '../lib/customTerms';
 import { scanText } from '../lib/scan';
 import { buildCleanText } from '../lib/sanitize';
 import { TermsFeedback } from './TermsFeedback';
+import { FormatPicker } from './settings/FormatsSection';
+import {
+  DEFAULT_CUSTOM_TERM_LABEL,
+  sanitizePlaceholderLabel,
+  templateFor,
+} from '../lib/redaction';
 
 interface QuickCloakDialogProps {
   open: boolean;
@@ -44,8 +50,15 @@ export function PrivateTermsDialog({
   const exampleAfter = buildCleanText(
     QUICK_CLOAK_EXAMPLE_BEFORE,
     scanText(QUICK_CLOAK_EXAMPLE_BEFORE, {
-      privateTerms: QUICK_CLOAK_EXAMPLE_TERMS,
       enabledDetectorIds: [],
+      extraDetectors: [
+        createPrivateTermsDetector(QUICK_CLOAK_EXAMPLE_TERMS, {
+          caseSensitive: session.termsCaseSensitive,
+          matchInsideWords: session.termsMatchInsideWords,
+          template: templateFor(session.termsFormat),
+          label: session.termsLabel,
+        }),
+      ],
     }),
   );
 
@@ -78,8 +91,8 @@ export function PrivateTermsDialog({
           Add exact words or phrases — organization names, domains, hostnames, usernames, project
           names, team names, or anything built-in detection misses. One per line, matched
           literally (never as a regular expression); common apostrophe, dash, and spacing variants
-          match automatically. Each unique term becomes{' '}
-          <code className="placeholder-code">[CUSTOM_TERM_n]</code> in the output.
+          match automatically. The default output is{' '}
+          <code className="placeholder-code">[CUSTOM_TERM_n]</code>; you can change it below.
         </p>
 
         <textarea
@@ -95,6 +108,40 @@ export function PrivateTermsDialog({
         />
 
         <TermsFeedback analysis={analysis} />
+
+        <div className="terms-format-control">
+          <h3>How these terms are cloaked</h3>
+          <FormatPicker
+            choice={session.termsFormat}
+            onChange={(termsFormat) => onUpdate({ termsFormat })}
+            compact
+            showPreview={false}
+            ariaLabel="Custom term redaction format"
+          />
+          <label>
+            <strong>Placeholder label</strong>
+            <input
+              className="template-input"
+              value={session.termsLabel}
+              maxLength={20}
+              spellCheck={false}
+              aria-label="Custom term placeholder label"
+              onChange={(event) => onUpdate({ termsLabel: event.target.value })}
+              onBlur={() =>
+                onUpdate({
+                  termsLabel: sanitizePlaceholderLabel(
+                    session.termsLabel,
+                    DEFAULT_CUSTOM_TERM_LABEL,
+                  ),
+                })
+              }
+            />
+          </label>
+          <p className="muted">
+            Letters, numbers, and underscores only. For example, CLIENT becomes CLIENT_1 in the
+            indexed format.
+          </p>
+        </div>
 
         <div className="terms-toggles">
           <label className="terms-toggle-row">

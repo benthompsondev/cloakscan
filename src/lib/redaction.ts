@@ -15,6 +15,7 @@ export interface RedactionChoice {
 }
 
 export const DEFAULT_TEMPLATE = '[{TYPE}_{INDEX}]';
+export const DEFAULT_CUSTOM_TERM_LABEL = 'CUSTOM_TERM';
 
 export const FORMAT_PRESETS: {
   id: RedactionFormatId;
@@ -81,6 +82,19 @@ export function templateFor(choice: RedactionChoice): string {
       : DEFAULT_TEMPLATE;
   }
   return FORMAT_PRESETS.find((f) => f.id === choice.id)?.template ?? DEFAULT_TEMPLATE;
+}
+
+/**
+ * Normalize a user-entered placeholder label without inventing a partial
+ * meaning. Lowercase is accepted, but punctuation/spaces fall back.
+ */
+export function sanitizePlaceholderLabel(
+  value: unknown,
+  fallback = DEFAULT_CUSTOM_TERM_LABEL,
+): string {
+  if (typeof value !== 'string') return fallback;
+  const normalized = value.trim().toUpperCase().slice(0, 20);
+  return /^[A-Z][A-Z0-9_]{0,19}$/.test(normalized) ? normalized : fallback;
 }
 
 /** Render one placeholder. Pure string substitution — nothing is executed. */

@@ -3,6 +3,7 @@ import { BUILT_IN_PACKS } from './packs';
 import {
   profileForStates,
   profileRuleStates,
+  BUILT_IN_PROFILES,
   validateName,
   type CoreMode,
   type ProfileConfig,
@@ -20,7 +21,14 @@ import {
   type CustomPack,
 } from './customPacks';
 import { MAX_PROFILES } from './profiles';
-import { validateTemplate, DEFAULT_TEMPLATE, type RedactionChoice, type RedactionFormatId } from './redaction';
+import {
+  validateTemplate,
+  DEFAULT_CUSTOM_TERM_LABEL,
+  DEFAULT_TEMPLATE,
+  sanitizePlaceholderLabel,
+  type RedactionChoice,
+  type RedactionFormatId,
+} from './redaction';
 import type { Category, Severity } from './types';
 
 /**
@@ -63,6 +71,7 @@ export function defaultPreferencesV2(): PreferencesV2 {
 
 const REGISTRY_IDS = new Set(detectors.map((d) => d.id));
 const BUILT_IN_PACK_IDS = new Set(BUILT_IN_PACKS.map((p) => p.id));
+const BUILT_IN_PROFILE_IDS = new Set(BUILT_IN_PROFILES.map((profile) => profile.id));
 const FORMAT_IDS: RedactionFormatId[] = ['indexed', 'unnumbered', 'uniform', 'custom'];
 const CATEGORIES: Category[] = ['secrets', 'infrastructure', 'personal', 'paths'];
 const SEVERITIES: Severity[] = ['high', 'medium', 'low'];
@@ -86,6 +95,19 @@ function cleanFormat(raw: unknown): RedactionChoice {
       ? data.customTemplate
       : DEFAULT_TEMPLATE;
   return { id, customTemplate };
+}
+
+function cleanTermFormat(raw: unknown): RedactionChoice {
+  if (typeof raw === 'object' && raw !== null) {
+    const data = raw as Record<string, unknown>;
+    if (
+      data.id === 'custom' &&
+      (typeof data.customTemplate !== 'string' || validateTemplate(data.customTemplate) !== null)
+    ) {
+      return { id: 'indexed', customTemplate: DEFAULT_TEMPLATE };
+    }
+  }
+  return cleanFormat(raw);
 }
 
 function cleanOverrides(raw: unknown): Record<string, boolean> {
@@ -168,6 +190,10 @@ function cleanCustomPack(raw: unknown): CustomPack | null {
     terms.caseSensitive = t.caseSensitive === true;
     terms.matchInsideWords = t.matchInsideWords !== false;
     terms.saveTerms = t.saveTerms === true;
+    if (t.termFormat !== undefined) terms.termFormat = cleanTermFormat(t.termFormat);
+    if (t.termLabel !== undefined) {
+      terms.termLabel = sanitizePlaceholderLabel(t.termLabel, DEFAULT_CUSTOM_TERM_LABEL);
+    }
     if (terms.saveTerms && Array.isArray(t.values)) {
       terms.values = t.values
         .filter((v): v is string => typeof v === 'string')
@@ -184,7 +210,7 @@ function cleanProfile(raw: unknown, customPackIds: Set<string>): ProfileConfig |
   const data = raw as Record<string, unknown>;
   const id = cleanString(data.id, 60);
   const name = cleanString(data.name, 40);
-  if (!id || !name || id === 'balanced' || id === 'strict' || validateName(name) !== null) {
+  if (!id || !name || BUILT_IN_PROFILE_IDS.has(id) || validateName(name) !== null) {
     return null;
   }
   const core: CoreMode = data.core === 'strict' ? 'strict' : 'balanced';
@@ -219,7 +245,7 @@ export function sanitizeV2(raw: unknown): PreferencesV2 | null {
 
   const requested = typeof data.activeProfileId === 'string' ? data.activeProfileId : 'balanced';
   const activeProfileId =
-    requested === 'balanced' || requested === 'strict' || profiles.some((p) => p.id === requested)
+    BUILT_IN_PROFILE_IDS.has(requested) || profiles.some((p) => p.id === requested)
       ? requested
       : 'balanced';
 
@@ -330,6 +356,8 @@ export function savePreferencesV2(prefs: PreferencesV2): void {
         caseSensitive: p.terms.caseSensitive,
         matchInsideWords: p.terms.matchInsideWords,
         saveTerms: p.terms.saveTerms,
+        termFormat: p.terms.termFormat,
+        termLabel: p.terms.termLabel,
         // Term VALUES only persist behind the pack's separate explicit opt-in.
         values: p.terms.saveTerms ? p.terms.values.slice(0, MAX_TERMS_PER_PACK) : [],
       },

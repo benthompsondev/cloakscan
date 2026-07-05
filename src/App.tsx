@@ -13,7 +13,7 @@ import {
 } from './lib/preferences';
 import {
   BALANCED_PROFILE,
-  STRICT_PROFILE,
+  BUILT_IN_PROFILES,
   MAX_PROFILES,
   enabledRuleIds,
   generateId,
@@ -48,7 +48,7 @@ export interface ScanMeta {
 
 export interface Workspace {
   remember: boolean;
-  /** 'balanced' | 'strict' | 'unsaved' | a named profile id. */
+  /** A built-in id, 'unsaved', or a named profile id. */
   activeProfileId: string;
   /** Session-only configuration created by modifying a built-in preset. */
   unsaved: ProfileConfig | null;
@@ -86,8 +86,8 @@ export default function App() {
   });
 
   const activeConfig: ProfileConfig = useMemo(() => {
-    if (workspace.activeProfileId === 'balanced') return BALANCED_PROFILE;
-    if (workspace.activeProfileId === 'strict') return STRICT_PROFILE;
+    const builtIn = BUILT_IN_PROFILES.find((profile) => profile.id === workspace.activeProfileId);
+    if (builtIn) return builtIn;
     if (workspace.activeProfileId === 'unsaved' && workspace.unsaved) return workspace.unsaved;
     return (
       workspace.profiles.find((p) => p.id === workspace.activeProfileId) ?? BALANCED_PROFILE
@@ -343,7 +343,20 @@ export default function App() {
           (p) => p.enabled && activeConfig.customPackIds.includes(p.id) && p.terms.values.length > 0,
         )
         .map((p) =>
-          createPrivateTermsDetector(p.terms.values, p.terms, `Cloak term (${p.name})`),
+          createPrivateTermsDetector(
+            p.terms.values,
+            {
+              ...p.terms,
+              template: templateFor(
+                p.terms.termFormat ?? {
+                  id: 'indexed',
+                  customTemplate: '[{TYPE}_{INDEX}]',
+                },
+              ),
+              label: p.terms.termLabel,
+            },
+            `Cloak term (${p.name})`,
+          ),
         ),
     ];
     return {
@@ -354,6 +367,8 @@ export default function App() {
         termsOptions: {
           caseSensitive: current.termsCaseSensitive,
           matchInsideWords: current.termsMatchInsideWords,
+          template: templateFor(current.termsFormat),
+          label: current.termsLabel,
         },
         enabledDetectorIds: enabledIds,
         extraDetectors,

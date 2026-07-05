@@ -1,5 +1,11 @@
 import type { Detector, RawMatch } from './types';
 import { MAX_TERMS_PER_PACK, MAX_TERM_LENGTH } from './customPacks';
+import {
+  DEFAULT_CUSTOM_TERM_LABEL,
+  DEFAULT_TEMPLATE,
+  sanitizePlaceholderLabel,
+  validateTemplate,
+} from './redaction';
 
 /**
  * Cloak terms: exact words or phrases the user wants redacted (organization
@@ -18,6 +24,13 @@ import { MAX_TERMS_PER_PACK, MAX_TERM_LENGTH } from './customPacks';
 export interface TermsOptions {
   caseSensitive: boolean;
   matchInsideWords: boolean;
+}
+
+export interface PrivateTermsDetectorOptions extends TermsOptions {
+  /** Optional per-detector template; invalid values keep the stable default. */
+  template?: string;
+  /** Optional per-detector label; normalized to a safe placeholder token. */
+  label?: string;
 }
 
 export const DEFAULT_TERMS_OPTIONS: TermsOptions = {
@@ -120,7 +133,7 @@ function normalizeTermValue(value: string, caseSensitive: boolean): string {
  */
 export function createPrivateTermsDetector(
   terms: string[],
-  options: TermsOptions = DEFAULT_TERMS_OPTIONS,
+  options: PrivateTermsDetectorOptions = DEFAULT_TERMS_OPTIONS,
   sourceName = 'Custom term to hide',
 ): Detector {
   const flags = options.caseSensitive ? 'gu' : 'giu';
@@ -132,7 +145,11 @@ export function createPrivateTermsDetector(
     name: sourceName,
     category: 'personal',
     severity: 'high',
-    label: 'CUSTOM_TERM',
+    label: sanitizePlaceholderLabel(options.label, DEFAULT_CUSTOM_TERM_LABEL),
+    placeholderTemplate:
+      options.template && validateTemplate(options.template) === null
+        ? options.template
+        : DEFAULT_TEMPLATE,
     // Below specific detectors (email 70, URL 75, paths 72): when a term is
     // part of a larger sensitive value, the whole value wins and is redacted.
     priority: 58,

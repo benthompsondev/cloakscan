@@ -192,6 +192,23 @@ test('custom terms dialog: badge, feedback, toggles, example, clear', async ({ p
   await page.getByRole('button', { name: 'Done' }).click();
 });
 
+test('custom terms can use a session-only label and format', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Source text input').fill('Contoso worked with Northwind');
+  await page.getByRole('button', { name: /Hide custom terms/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Custom terms to hide' });
+  await dialog.getByRole('textbox', { name: 'Custom terms to hide' }).fill('Contoso\nNorthwind');
+  await dialog.getByRole('radio', { name: /Custom template/ }).check();
+  await dialog.getByRole('textbox', { name: 'Custom template' }).fill('<{TYPE}:{INDEX}>');
+  await dialog.getByLabel('Custom term placeholder label').fill('client');
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await page.getByRole('button', { name: 'Scan locally' }).click();
+  await expect(page.getByRole('region', { name: /Redacted preview/i })).toContainText(
+    '<CLIENT:1> worked with <CLIENT:2>',
+  );
+  expect(await page.evaluate(() => localStorage.length)).toBe(0);
+});
+
 test('remember off: profiles, packs, and terms vanish on reload', async ({ page }) => {
   await enablePack(page, 'Canada Pack');
   await page.getByLabel('New profile name').fill('Ephemeral');

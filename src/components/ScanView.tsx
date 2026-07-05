@@ -5,7 +5,7 @@ import type { CloakCandidate } from '../lib/candidates';
 import { analyzePrivateTerms } from '../lib/customTerms';
 import { isCloakList } from '../lib/customPacks';
 import { packById } from '../lib/packs';
-import type { ProfileConfig } from '../lib/profiles';
+import { BUILT_IN_PROFILES, type ProfileConfig } from '../lib/profiles';
 import type { Notice, ScanMeta, Workspace } from '../App';
 import { SourcePanel } from './SourcePanel';
 import { PreviewPanel } from './PreviewPanel';
@@ -91,8 +91,11 @@ export function ScanView({
             value={workspace.activeProfileId}
             onChange={(e) => onSelectProfile(e.target.value)}
           >
-            <option value="balanced">Balanced</option>
-            <option value="strict">Strict</option>
+            {BUILT_IN_PROFILES.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.name}
+              </option>
+            ))}
             {workspace.profiles.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}

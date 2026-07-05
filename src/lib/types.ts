@@ -27,6 +27,11 @@ export interface Detector {
   /** Placeholder label, e.g. 'EMAIL' produces [EMAIL_1], [EMAIL_2], ... */
   label: string;
   /**
+   * Optional detector-specific placeholder template. Used by session custom
+   * terms and Cloak Lists; registry detectors keep the scan-wide format.
+   */
+  placeholderTemplate?: string;
+  /**
    * Overlap priority. When two findings overlap, the higher-priority
    * (more specific) detector wins. Ties fall back to confidence, then length.
    */

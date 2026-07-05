@@ -76,6 +76,43 @@ describe('term safety', () => {
 });
 
 describe('cloak term scanning', () => {
+  it('keeps the default custom-term placeholder byte-identical', () => {
+    const text = 'Contoso and Northwind';
+    const findings = scanText(text, {
+      extraDetectors: [createPrivateTermsDetector(['Contoso', 'Northwind'])],
+      enabledDetectorIds: [],
+    });
+    expect(buildCleanText(text, findings)).toBe('[CUSTOM_TERM_1] and [CUSTOM_TERM_2]');
+  });
+
+  it('supports a detector-specific format and label without changing the global format', () => {
+    const text = 'Contoso and Northwind';
+    const detector = createPrivateTermsDetector(['Contoso', 'Northwind'], {
+      ...DEFAULT_TERMS_OPTIONS,
+      template: '<{TYPE}:{INDEX}>',
+      label: 'CLIENT',
+    });
+    const findings = scanText(text, {
+      extraDetectors: [detector],
+      enabledDetectorIds: [],
+      placeholderTemplate: '[GLOBAL_{INDEX}]',
+    });
+    expect(buildCleanText(text, findings)).toBe('<CLIENT:1> and <CLIENT:2>');
+  });
+
+  it('falls back to the stable defaults for an invalid custom format or label', () => {
+    const detector = createPrivateTermsDetector(['Contoso'], {
+      ...DEFAULT_TERMS_OPTIONS,
+      template: '{MATCHED_VALUE}',
+      label: 'not valid!',
+    });
+    const findings = scanText('Contoso', {
+      extraDetectors: [detector],
+      enabledDetectorIds: [],
+    });
+    expect(findings[0]?.placeholder).toBe('[CUSTOM_TERM_1]');
+  });
+
   it('matches literally and case-insensitively with one stable placeholder', () => {
     const text = 'Contoso staff met CONTOSO vendors at contoso HQ';
     const findings = scanText(text, { privateTerms: parsePrivateTerms('Contoso') });
@@ -135,6 +172,8 @@ describe('session clearing', () => {
       privateTermsInput: '',
       termsCaseSensitive: false,
       termsMatchInsideWords: false,
+      termsFormat: { id: 'indexed', customTemplate: '[{TYPE}_{INDEX}]' },
+      termsLabel: 'CUSTOM_TERM',
       findings: [],
       hasScanned: false,
     });
