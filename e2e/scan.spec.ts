@@ -43,6 +43,36 @@ test('loads the demo and scans it locally', async ({ page }) => {
   await expect(preview).not.toContainText('alex.demo@example.internal');
 });
 
+test('suggested terms stay inert until the user hides one for the session', async ({ page }) => {
+  await page.goto('/');
+  await expect(
+    page.getByRole('region', { name: 'Possible names and terms to review' }),
+  ).toBeHidden();
+
+  await loadDemoAndScan(page);
+
+  const panel = page.getByRole('region', { name: 'Possible names and terms to review' });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByText('Possible names & terms to review')).toBeVisible();
+  const alexSuggestion = panel.getByRole('listitem', { name: 'Suggested term Alex Demo' });
+  await expect(alexSuggestion).toBeVisible();
+  await expect(page.getByLabel('Sanitized output with placeholders')).toContainText('Alex Demo');
+
+  const panelToggle = panel.getByRole('button', { name: /Possible names & terms to review/ });
+  await expect(panelToggle).toHaveAttribute('aria-expanded', 'true');
+  await panelToggle.click();
+  await expect(panelToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(alexSuggestion).toBeHidden();
+  await panelToggle.click();
+
+  await alexSuggestion.getByRole('button', { name: 'Hide this session' }).click();
+
+  await expect(alexSuggestion).toBeHidden();
+  await expect(page.getByLabel('Sanitized output with placeholders')).toContainText(
+    '[CUSTOM_TERM_1]',
+  );
+});
+
 test('toggling a finding restores the original value in the preview', async ({ page }) => {
   await loadDemoAndScan(page);
   const preview = page.getByRole('region', { name: /Redacted preview/i });

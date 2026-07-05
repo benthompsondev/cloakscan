@@ -27,6 +27,7 @@ import {
   type CustomPack,
 } from './lib/customPacks';
 import { templateFor, type RedactionChoice } from './lib/redaction';
+import { findCloakCandidates } from './lib/candidates';
 import { useHashRoute } from './hooks/useHashRoute';
 import { Header } from './components/Header';
 import { DemoBanner } from './components/DemoBanner';
@@ -318,6 +319,11 @@ export default function App() {
     [session],
   );
   const groups = useMemo(() => groupFindings(session.findings), [session.findings]);
+  const candidates = useMemo(
+    () =>
+      session.hasScanned ? findCloakCandidates(session.sourceText, session.findings) : [],
+    [session.findings, session.hasScanned, session.sourceText],
+  );
 
   const setSource = (sourceText: string) =>
     setSession((s) => ({ ...s, sourceText, findings: [], hasScanned: false }));
@@ -325,9 +331,10 @@ export default function App() {
   const updateTerms = (patch: Partial<SessionState>) =>
     setSession((s) => ({ ...s, ...patch, findings: [], hasScanned: false }));
 
-  const scan = () => {
-    const startedAt = new Date();
-    const t0 = performance.now();
+  const scanSession = (
+    current: SessionState,
+    privateTermsInput = current.privateTermsInput,
+  ): SessionState => {
     const extraDetectors = [
       ...detectorsFromCustomPacks(workspace.customPacks, activeConfig.customPackIds),
       ...workspace.customPacks
@@ -338,20 +345,52 @@ export default function App() {
           createPrivateTermsDetector(p.terms.values, p.terms, `Cloak term (${p.name})`),
         ),
     ];
-    setSession((s) => ({
-      ...s,
-      findings: scanText(s.sourceText, {
-        privateTerms: parsePrivateTerms(s.privateTermsInput, s.termsCaseSensitive),
+    return {
+      ...current,
+      privateTermsInput,
+      findings: scanText(current.sourceText, {
+        privateTerms: parsePrivateTerms(privateTermsInput, current.termsCaseSensitive),
         termsOptions: {
-          caseSensitive: s.termsCaseSensitive,
-          matchInsideWords: s.termsMatchInsideWords,
+          caseSensitive: current.termsCaseSensitive,
+          matchInsideWords: current.termsMatchInsideWords,
         },
         enabledDetectorIds: enabledIds,
         extraDetectors,
         placeholderTemplate: templateFor(activeConfig.format),
       }),
       hasScanned: true,
-    }));
+    };
+  };
+
+  const scan = () => {
+    const startedAt = new Date();
+    const t0 = performance.now();
+    setSession((current) => scanSession(current));
+    setScanMeta({ startedAt, durationMs: performance.now() - t0 });
+  };
+
+  const hideCandidate = (term: string) => {
+    const startedAt = new Date();
+    const t0 = performance.now();
+    setSession((current) => {
+      const existingTerms = parsePrivateTerms(
+        current.privateTermsInput,
+        current.termsCaseSensitive,
+      );
+      const normalize = (value: string) =>
+        current.termsCaseSensitive ? value : value.toLocaleLowerCase();
+      const alreadyPresent = existingTerms.some(
+        (existing) => normalize(existing) === normalize(term),
+      );
+      const separator =
+        current.privateTermsInput.length === 0 || current.privateTermsInput.endsWith('\n')
+          ? ''
+          : '\n';
+      const privateTermsInput = alreadyPresent
+        ? current.privateTermsInput
+        : `${current.privateTermsInput}${separator}${term}`;
+      return scanSession(current, privateTermsInput);
+    });
     setScanMeta({ startedAt, durationMs: performance.now() - t0 });
   };
 
@@ -397,6 +436,7 @@ export default function App() {
           <ScanView
             session={session}
             groups={groups}
+            candidates={candidates}
             cleanText={cleanText}
             scanMeta={scanMeta}
             workspace={workspace}
@@ -407,6 +447,7 @@ export default function App() {
             onUpdateTerms={updateTerms}
             onScan={scan}
             onToggleGroup={onToggleGroup}
+            onHideCandidate={hideCandidate}
             onSelectProfile={onSelectProfile}
             onClear={clearAll}
             onNotice={showNotice}

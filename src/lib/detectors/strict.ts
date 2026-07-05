@@ -88,8 +88,12 @@ const NAME_PARTICLE_RE =
 const NAME_SUFFIX_RE = /^(?:Jr|Sr|II|III|IV)\.?$/u;
 // PowerShell Verb-Noun command shape (command grammar, not a dictionary):
 // values like Get-Random or Restart-Service are never person names.
-const CMDLET_SHAPE_RE =
+export const CMDLET_SHAPE_RE =
   /^(?:Add|Clear|Close|Compare|Convert|ConvertFrom|ConvertTo|Copy|Disable|Dismount|Enable|Enter|Exit|Expand|Export|Find|Format|Get|Import|Install|Invoke|Join|Measure|Mount|Move|New|Out|Push|Pop|Read|Register|Remove|Rename|Reset|Resize|Resolve|Restart|Restore|Resume|Select|Send|Set|Show|Sort|Split|Start|Stop|Suspend|Test|Unblock|Uninstall|Unregister|Update|Wait|Write)-\p{Lu}[\p{L}\p{Nd}]*$/u;
+
+export function isPowerShellCmdletShape(value: string): boolean {
+  return CMDLET_SHAPE_RE.test(value);
+}
 
 function isCapitalizedNamePart(part: string): boolean {
   return CAPITALIZED_NAME_PART_RE.test(part) && /\p{Ll}/u.test(part);
@@ -98,7 +102,7 @@ function isCapitalizedNamePart(part: string): boolean {
 function looksLikeName(value: string, allowSingle: boolean): boolean {
   const parts = value.split(/[ \t]+/u);
   if (parts.length < (allowSingle ? 1 : 2) || parts.length > 5) return false;
-  if (parts.some((part) => CMDLET_SHAPE_RE.test(part))) return false;
+  if (parts.some((part) => isPowerShellCmdletShape(part))) return false;
   return parts.every((part, index) => {
     if (isCapitalizedNamePart(part) || NAME_PARTICLE_RE.test(part)) return true;
     if (index > 0 && index === parts.length - 1 && NAME_SUFFIX_RE.test(part)) return true;
@@ -154,8 +158,141 @@ const PROSE_CUE_RE =
 
 // Grammatical stop words (articles, pronouns, common verbs/adverbs). A name
 // token matching one of these ends the candidate.
-const NAME_STOP_WORD_RE =
-  /^(?:a|an|the|this|that|these|those|my|our|your|his|her|their|its|me|us|him|them|we|you|it|he|she|they|i|if|when|then|all|any|each|every|some|no|not|please|and|or|but|for|with|at|on|in|to|from|by|of|as|is|are|was|were|be|being|been|will|shall|should|would|can|could|may|might|must|do|does|did|here|there|now|today|support|team|help|desk|admin|it)$/iu;
+export const NAME_STOP_WORDS = [
+  'a',
+  'an',
+  'the',
+  'this',
+  'that',
+  'these',
+  'those',
+  'my',
+  'our',
+  'your',
+  'his',
+  'her',
+  'their',
+  'its',
+  'me',
+  'us',
+  'him',
+  'them',
+  'we',
+  'you',
+  'it',
+  'he',
+  'she',
+  'they',
+  'i',
+  'if',
+  'when',
+  'then',
+  'all',
+  'any',
+  'each',
+  'every',
+  'some',
+  'no',
+  'not',
+  'please',
+  'and',
+  'or',
+  'but',
+  'for',
+  'with',
+  'at',
+  'on',
+  'in',
+  'to',
+  'from',
+  'by',
+  'of',
+  'as',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'being',
+  'been',
+  'will',
+  'shall',
+  'should',
+  'would',
+  'can',
+  'could',
+  'may',
+  'might',
+  'must',
+  'do',
+  'does',
+  'did',
+  'here',
+  'there',
+  'now',
+  'today',
+  'support',
+  'team',
+  'help',
+  'desk',
+  'admin',
+  'it',
+] as const;
+
+export const CALENDAR_WORDS = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+  'jan',
+  'feb',
+  'mar',
+  'apr',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'sept',
+  'oct',
+  'nov',
+  'dec',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+  'mon',
+  'tue',
+  'tues',
+  'wed',
+  'thu',
+  'thur',
+  'thurs',
+  'fri',
+  'sat',
+  'sun',
+] as const;
+
+const NAME_STOP_WORD_SET = new Set<string>(NAME_STOP_WORDS);
+const CALENDAR_WORD_SET = new Set<string>(CALENDAR_WORDS);
+
+export function isNameStopWord(value: string): boolean {
+  return NAME_STOP_WORD_SET.has(value.toLocaleLowerCase());
+}
+
+export function isCalendarWord(value: string): boolean {
+  return CALENDAR_WORD_SET.has(value.toLocaleLowerCase());
+}
 
 const TRAILING_PUNCT_RE = /[?!.,;:)\]'"’]+$/u;
 
@@ -191,7 +328,7 @@ function nameTokensAfter(
     if (trailing.startsWith('.') && (NAME_SUFFIX_RE.test(`${core}.`) || NAME_INITIAL_RE.test(`${core}.`))) {
       core = `${core}.`;
     }
-    if (core.length === 0 || NAME_STOP_WORD_RE.test(core) || CMDLET_SHAPE_RE.test(core)) break;
+    if (core.length === 0 || isNameStopWord(core) || isPowerShellCmdletShape(core)) break;
     const first = accepted === 0;
     const isPart = isCapitalizedNamePart(core);
     const isOther =

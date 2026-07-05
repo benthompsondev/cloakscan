@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { SessionState } from '../lib/session';
 import type { FindingGroup } from '../lib/groups';
+import type { CloakCandidate } from '../lib/candidates';
 import { analyzePrivateTerms } from '../lib/customTerms';
 import { isCloakList } from '../lib/customPacks';
 import { packById } from '../lib/packs';
@@ -11,10 +12,12 @@ import { PreviewPanel } from './PreviewPanel';
 import { FindingsPanel } from './FindingsPanel';
 import { ScanSummary } from './ScanSummary';
 import { PrivateTermsDialog } from './PrivateTermsDialog';
+import { CandidatePanel } from './CandidatePanel';
 
 interface ScanViewProps {
   session: SessionState;
   groups: FindingGroup[];
+  candidates: CloakCandidate[];
   cleanText: string;
   scanMeta: ScanMeta | null;
   workspace: Workspace;
@@ -25,6 +28,7 @@ interface ScanViewProps {
   onUpdateTerms: (patch: Partial<SessionState>) => void;
   onScan: () => void;
   onToggleGroup: (ids: readonly string[], enabled: boolean) => void;
+  onHideCandidate: (term: string) => void;
   onSelectProfile: (id: string) => void;
   onClear: () => void;
   onNotice: (notice: Notice) => void;
@@ -33,6 +37,7 @@ interface ScanViewProps {
 export function ScanView({
   session,
   groups,
+  candidates,
   cleanText,
   scanMeta,
   workspace,
@@ -43,6 +48,7 @@ export function ScanView({
   onUpdateTerms,
   onScan,
   onToggleGroup,
+  onHideCandidate,
   onSelectProfile,
   onClear,
   onNotice,
@@ -166,16 +172,21 @@ export function ScanView({
       </div>
 
       {session.hasScanned && (
-        <div className="results">
-          <FindingsPanel groups={groups} onToggleGroup={onToggleGroup} />
-          <ScanSummary
-            startedAt={scanMeta?.startedAt ?? null}
-            durationMs={scanMeta?.durationMs ?? null}
-            ruleCount={enabledCount}
-            itemsDetected={session.findings.length}
-            redactionsApplied={session.findings.filter((f) => f.enabled).length}
-          />
-        </div>
+        <>
+          <div className="results">
+            <FindingsPanel groups={groups} onToggleGroup={onToggleGroup} />
+            <ScanSummary
+              startedAt={scanMeta?.startedAt ?? null}
+              durationMs={scanMeta?.durationMs ?? null}
+              ruleCount={enabledCount}
+              itemsDetected={session.findings.length}
+              redactionsApplied={session.findings.filter((f) => f.enabled).length}
+            />
+          </div>
+          {candidates.length > 0 && (
+            <CandidatePanel candidates={candidates} onHideCandidate={onHideCandidate} />
+          )}
+        </>
       )}
 
       <PrivateTermsDialog
