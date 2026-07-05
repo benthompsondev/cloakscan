@@ -50,7 +50,7 @@ npm run verify    # audit + lint + unit tests + build + e2e, all in one
 
 ## What it does
 
-1. Paste text, import a text/log/code/config file (read in memory, max 2 MB; UTF-8 and UTF-16 PowerShell files both decode correctly), or load a built-in synthetic sample: **Load sample** for an IT/admin log or **PII sample** for personal data.
+1. Paste text, import a text/log/code/config file (read in memory, max 2 MB; UTF-8 and UTF-16 PowerShell files both decode correctly), or use **Load sample** for one synthetic incident that covers secrets, infrastructure, and labeled personal data.
 2. Click **Scan locally**. CloakGuard has 40 focused detectors covering common secrets, credentials, network details, file paths, cloud identifiers, personal data, and regional formats. Balanced handles everyday scans. Strict adds contextual personal information. Maximum adds every country pack. Code & secrets leaves prose PII off. See [Detector behavior and safety](docs/detectors.md) for the full list and known limits.
 3. Use **Hide custom terms** for exact names, domains, hostnames, project names, or other values the built-in rules cannot know. These terms last for the current session only. You can give them their own placeholder label and format. For reusable terms, create a **Cloak List** under Settings > Profiles & Packs.
 4. Review **Possible names & terms to review**. These are guesses only. Nothing is hidden until you choose **Hide this session** or add the term to a reusable Cloak List.
@@ -93,12 +93,14 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Project status
 
-Current release: **v1.0.0**
+Current release: **v1.0.1**
 
 - The Windows app is ready for public use and can check GitHub for signed updates when the user asks it to. It never checks in the background.
 - Forty focused rules now cover more fixed-prefix secrets, structured identifiers, and network details.
 - Balanced, Strict, Maximum, and Code & secrets give people useful starting points without hiding individual rule controls.
 - Session terms and Cloak Lists can use their own safe placeholder label and format.
+- The built-in sample now gives one clear comparison between Balanced and Strict.
+- Four-part software versions stay visible when they appear after common version labels.
 
 CloakGuard is still a detection helper, not a guarantee or compliance product. Always review the cleaned text before sharing it.
 

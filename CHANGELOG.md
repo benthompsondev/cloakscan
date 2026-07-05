@@ -2,6 +2,24 @@
 
 This file tracks the public CloakGuard releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.1] - 2026-07-05
+
+### Changed
+
+- Replaced the separate IT and PII samples with one synthetic incident that makes the difference between Balanced and Strict easier to see.
+- Added Ctrl+Enter and Cmd+Enter as shortcuts for running a scan from the source editor.
+
+### Fixed
+
+- Stopped treating four-part software versions as IP addresses when quotes, brackets, XML delimiters, or similar short separators sit between the version label and value.
+- Kept real private, DNS, and public IP addresses redacting in the same contexts as before.
+
+### Safety
+
+- All provider-shaped values in the built-in sample are synthetic and assembled in code so secret scanners do not mistake them for live credentials.
+- Scanning, preference storage, CSP, desktop permissions, and click-only updater behavior are unchanged.
+- The updater package is signed for Tauri verification. The Windows installer itself is still unsigned and may trigger SmartScreen.
+
 ## [1.0.0] - 2026-07-05
 
 ### Added
@@ -117,6 +135,7 @@ This file tracks the public CloakGuard releases. The format follows [Keep a Chan
 - Kept scanning local with no backend, account, or telemetry.
 - Documented the unsigned-installer warning and the need to review cleaned text before sharing.
 
+[1.0.1]: https://github.com/benthompsondev/cloakguard/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/benthompsondev/cloakguard/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/benthompsondev/cloakguard/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/benthompsondev/cloakguard/compare/v0.7.3...v0.8.0
