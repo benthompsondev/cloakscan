@@ -13,6 +13,8 @@ playwright-report/
 src-tauri/target/
 src-tauri/gen/
 .cargo/
+*.key
+.cloakguard/
 
 # Staged release binaries (never tracked)
 release/

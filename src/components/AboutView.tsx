@@ -2,69 +2,111 @@ import { APP_VERSION } from '../lib/version';
 import { detectors } from '../lib/detectors';
 import { PREFERENCES_STORAGE_KEY_V2 } from '../lib/preferences';
 import { ShieldLogo } from './ShieldLogo';
+import { LocalIcon, OpenSourceIcon, PrivacyIcon } from './StatusIcons';
+import { UpdatePanel } from './UpdatePanel';
+import { Wordmark } from './Wordmark';
 
 interface AboutViewProps {
   remember: boolean;
+  isDesktop: boolean;
   onClearPreferences: () => void;
 }
 
-export function AboutView({ remember, onClearPreferences }: AboutViewProps) {
+const PROJECT_LINKS = [
+  ['GitHub', 'https://github.com/benthompsondev/cloakguard'],
+  ['Live demo', 'https://benthompsondev.github.io/cloakguard/'],
+  ['Changelog', 'https://github.com/benthompsondev/cloakguard/blob/main/CHANGELOG.md'],
+  ['Report an issue', 'https://github.com/benthompsondev/cloakguard/issues'],
+  ['Security policy', 'https://github.com/benthompsondev/cloakguard/blob/main/SECURITY.md'],
+  ['License', 'https://github.com/benthompsondev/cloakguard/blob/main/LICENSE'],
+  ['How it works', 'https://github.com/benthompsondev/cloakguard/blob/main/docs/architecture.md'],
+] as const;
+
+export function AboutView({ remember, isDesktop, onClearPreferences }: AboutViewProps) {
   return (
     <div className="about">
-      <div className="page-head about-head">
+      <div className="about-hero">
         <ShieldLogo />
         <div>
-          <h1>CloakGuard</h1>
+          <h1>
+            <Wordmark />
+          </h1>
           <p className="muted">
-            Local-first text sanitizer · version {APP_VERSION} · {detectors.length} detection rules
-            · MIT licensed
+            Version {APP_VERSION} · {detectors.length} detection rules · MIT licensed
           </p>
         </div>
       </div>
 
-      <div className="about-grid">
-        <section className="panel settings-panel" aria-label="Privacy model">
+      <div className="privacy-pillars" aria-label="Privacy highlights">
+        <article className="privacy-pillar">
+          <span className="privacy-pillar-icon">
+            <LocalIcon className="about-icon" />
+          </span>
+          <div>
+            <h2>Local scanning</h2>
+            <p>Text is scanned and cleaned on this device. It is never uploaded.</p>
+          </div>
+        </article>
+        <article className="privacy-pillar">
+          <span className="privacy-pillar-icon">
+            <PrivacyIcon className="about-icon" />
+          </span>
+          <div>
+            <h2>Memory-only content</h2>
+            <p>Source text, findings, and cleaned output disappear when the session is cleared.</p>
+          </div>
+        </article>
+        <article className="privacy-pillar">
+          <span className="privacy-pillar-icon">
+            <OpenSourceIcon className="about-icon" />
+          </span>
+          <div>
+            <h2>Open source</h2>
+            <p>The scanning rules and privacy boundaries can be inspected on GitHub.</p>
+          </div>
+        </article>
+      </div>
+
+      <div className={`about-content ${isDesktop ? '' : 'is-web'}`.trim()}>
+        <section className="panel about-privacy" aria-labelledby="privacy-model-title">
           <div className="panel-head">
             <div className="panel-title">
-              <h2>Privacy model</h2>
+              <h2 id="privacy-model-title">Privacy model</h2>
             </div>
           </div>
           <div className="settings-body">
             <ul className="about-list">
               <li>
-                <strong>On-device only.</strong> Scanning and sanitization run entirely on this
-                device. There is no backend, no account, and no upload — CloakGuard makes no
-                remote application requests.
+                <strong>No content leaves the scanner.</strong> There is no account, backend,
+                telemetry, or upload.
               </li>
               <li>
-                <strong>Memory-only content.</strong> Source text, findings, output, and Quick
-                Cloak terms vanish on refresh or Clear session. Nothing is written to local
-                storage by default.
+                <strong>Hide custom terms is session-only.</strong> Source text, findings, output,
+                and those terms vanish on refresh or <em>Clear session</em>.
               </li>
               <li>
-                <strong>Opt-in preferences only.</strong>{' '}
+                <strong>Preferences are opt-in.</strong>{' '}
                 {remember ? (
                   <>
-                    Preference storage is currently <strong>ON</strong>: one key (
-                    <code>{PREFERENCES_STORAGE_KEY_V2}</code>) holds your profiles, packs, rule
-                    choices, and redaction format — never any content. Saved data is plain,
-                    unencrypted localStorage.
+                    Storage is currently <strong>ON</strong>. One key (
+                    <code>{PREFERENCES_STORAGE_KEY_V2}</code>) holds allowlisted settings, never
+                    scan content. Saved values are plain, unencrypted local data.
                   </>
                 ) : (
                   <>
-                    Preference storage is currently <strong>OFF</strong> — nothing is stored on
-                    this device.
+                    Storage is currently <strong>OFF</strong>. No CloakGuard preferences are saved
+                    on this device.
                   </>
                 )}
               </li>
               <li>
-                <strong>Defense-in-depth.</strong> The production build ships a strict Content
-                Security Policy that blocks outbound connection APIs; an automated test verifies no
-                non-local origin is contacted.
+                <strong>Update checks are click-only.</strong> In the desktop app, checking for an
+                update contacts GitHub from the Rust side. It sends no content or telemetry. The
+                scanning webview remains blocked from making outbound connections.
               </li>
               <li>
-                <strong>Honest limits.</strong> Automated detection can miss sensitive information.
-                Review before sharing.
+                <strong>Detection has limits.</strong> Automated rules can miss sensitive
+                information. Review the cleaned text before sharing it.
               </li>
             </ul>
             <div className="setting-row">
@@ -76,27 +118,16 @@ export function AboutView({ remember, onClearPreferences }: AboutViewProps) {
           </div>
         </section>
 
-        <section className="panel settings-panel" aria-label="Why no scan history">
-          <div className="panel-head">
-            <div className="panel-title">
-              <h2>Why no scan history?</h2>
-            </div>
-          </div>
-          <div className="settings-body">
-            <p className="muted">
-              Sanitized output can still contain a value the detectors missed. A history feature
-              that automatically saves results would quietly persist exactly the data CloakGuard
-              exists to protect — so scans are deliberately not saved. If history is revisited, it
-              will be a separately reviewed feature with explicit per-result saving, clear warnings,
-              deletion, and retention controls.
-            </p>
-            <p className="muted">
-              Detection profiles, rule details, and redaction formats live in{' '}
-              <a href="#/settings/general">Settings</a>.
-            </p>
-          </div>
-        </section>
+        {isDesktop && <UpdatePanel />}
       </div>
+
+      <nav className="about-links" aria-label="Project links">
+        {PROJECT_LINKS.map(([label, href]) => (
+          <a key={label} href={href} target="_blank" rel="noreferrer">
+            {label}
+          </a>
+        ))}
+      </nav>
     </div>
   );
 }

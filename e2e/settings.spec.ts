@@ -37,7 +37,8 @@ test('navigation is keyboard accessible', async ({ page }) => {
 
   await page.getByRole('link', { name: 'Privacy / About' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Why no scan history?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Privacy model' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Check for updates' })).toBeHidden();
 });
 
 test('detection rules view lists the real registry with a detail panel', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { isTauri } from '@tauri-apps/api/core';
 import { scanText } from './lib/scan';
 import { buildCleanText } from './lib/sanitize';
 import { parsePrivateTerms, createPrivateTermsDetector } from './lib/customTerms';
@@ -455,7 +456,11 @@ export default function App() {
         )}
         {route.view === 'settings' && <SettingsView section={route.section} {...settingsProps} />}
         {route.view === 'about' && (
-          <AboutView remember={workspace.remember} onClearPreferences={onClearPreferences} />
+          <AboutView
+            remember={workspace.remember}
+            isDesktop={isTauri()}
+            onClearPreferences={onClearPreferences}
+          />
         )}
       </main>
       <div className="notice-region" role="status" aria-live="polite">

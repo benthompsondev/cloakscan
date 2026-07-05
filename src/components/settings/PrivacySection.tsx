@@ -72,8 +72,9 @@ export function PrivacySection({ workspace, onSetRemember, onClearPreferences }:
 
         <h3>Network</h3>
         <p className="muted">
-          CloakGuard has no backend and no remote service — there is nothing for it to talk to. As
-          defense-in-depth, the production build ships a strict Content Security Policy that blocks
+          Scanning has no backend, upload, or telemetry. In the desktop app, the only network
+          feature is <em>Check for updates</em>, which contacts GitHub from the Rust side only when
+          you click it. The scanning webview keeps a strict Content Security Policy that blocks
           outbound connection APIs, and an automated test verifies no non-local origin is contacted.
         </p>
       </div>

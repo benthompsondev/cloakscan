@@ -1,6 +1,6 @@
 [package]
 name = "cloakguard"
-version = "0.8.0"
+version = "0.9.0"
 description = "CloakGuard - local-first text sanitizer, desktop shell"
 authors = ["Ben Thompson"]
 homepage = "https://github.com/benthompsondev/cloakguard"
@@ -9,19 +9,22 @@ edition = "2021"
 license = "MIT"
 publish = false
 
-# The desktop shell is deliberately near-empty. All application logic lives
-# in the bundled web frontend. The ONE piece of IPC is export_clean_text:
+# The desktop shell is deliberately small. Scanning logic lives in the
+# bundled web frontend. The one app-specific IPC command is export_clean_text:
 # WebView2 silently ignores blob-anchor downloads, so saving the cleaned
 # output needs a native save dialog + a write to exactly that user-chosen
-# path. The dialog plugin is used from Rust only — the frontend has no
-# dialog or filesystem permissions.
+# path. The frontend has no dialog or filesystem permissions. The official
+# updater and process plugins are limited by capabilities/main.json.
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+serde_json = "1"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
+tauri-plugin-process = "2.3.1"
+tauri-plugin-updater = "2.10.1"
 
 [profile.release]
 panic = "abort"

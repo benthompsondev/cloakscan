@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "CloakGuard",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "identifier": "dev.benthompson.cloakguard",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -28,6 +28,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": ["nsis"],
     "category": "Utility",
     "publisher": "CloakGuard Project",
@@ -46,6 +47,14 @@
       "nsis": {
         "installMode": "currentUser"
       }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdGRTkyMjA0OUQ3NTJBQQpSV1NxVXRkSklKTCtCejR1ZWdybXJaanJxODJtSXFTU2NLUW00S1Fram5Wa04yU1VlbzNSaVRqMQo=",
+      "endpoints": [
+        "https://github.com/benthompsondev/cloakguard/releases/latest/download/latest.json"
+      ]
     }
   }
 }

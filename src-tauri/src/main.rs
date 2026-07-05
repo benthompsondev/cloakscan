@@ -1,8 +1,8 @@
-// CloakGuard desktop shell. Loads the bundled static frontend; the only IPC
-// surface is export_clean_text below, and the build-time ACL (build.rs)
-// rejects every other command. Release builds hide the console window and
-// have devtools disabled (the `devtools` cargo feature is intentionally
-// absent).
+// CloakGuard desktop shell. Loads the bundled static frontend. The only
+// app-specific IPC command is export_clean_text below, and the build-time
+// ACL (build.rs) rejects every other app command. Tauri's updater and process
+// plugins expose only the permissions listed in capabilities/main.json.
+// Release builds hide the console window and have devtools disabled.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::Path;
@@ -47,6 +47,12 @@ fn export_clean_text(app: tauri::AppHandle, contents: String) -> Result<bool, St
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
+        .setup(|app| {
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![export_clean_text])
         .run(tauri::generate_context!())
         .expect("error while running CloakGuard");
@@ -91,7 +97,10 @@ mod tests {
     fn missing_directory_returns_err_and_writes_nothing() {
         let path = temp_file("no-such-dir").join("nested").join("f.txt");
         let result = write_export(&path, "content");
-        assert!(result.is_err(), "writing into a missing directory must fail");
+        assert!(
+            result.is_err(),
+            "writing into a missing directory must fail"
+        );
         assert!(!path.exists());
     }
 }

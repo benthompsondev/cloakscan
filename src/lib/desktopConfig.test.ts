@@ -46,14 +46,26 @@ describe('tauri.conf.json privacy surface', () => {
     expect(conf.bundle.publisher).toBe('CloakGuard Project');
     expect(conf.bundle.homepage).toBe('https://github.com/benthompsondev/cloakguard');
   });
+
+  it('creates signed updater artifacts against the GitHub release manifest', () => {
+    expect(conf.bundle.createUpdaterArtifacts).toBe(true);
+    expect(conf.plugins.updater.pubkey).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    expect(conf.plugins.updater.endpoints).toEqual([
+      'https://github.com/benthompsondev/cloakguard/releases/latest/download/latest.json',
+    ]);
+  });
 });
 
 describe('capability grants', () => {
-  it('grants exactly allow-export-clean-text and nothing else', () => {
-    expect(capability.permissions).toEqual(['allow-export-clean-text']);
+  it('grants only file export and the user-triggered update flow', () => {
+    expect(capability.permissions).toEqual([
+      'allow-export-clean-text',
+      'updater:default',
+      'process:allow-restart',
+    ]);
   });
 
-  it('does not grant core defaults or any plugin surface', () => {
+  it('does not grant core defaults or unrelated plugin surfaces', () => {
     const all = JSON.stringify(capability.permissions);
     for (const banned of [
       'core:',
@@ -69,6 +81,7 @@ describe('capability grants', () => {
       'window:',
       'webview',
       'devtools',
+      'process:allow-exit',
     ]) {
       expect(all, `permission list must not contain "${banned}"`).not.toContain(banned);
     }
