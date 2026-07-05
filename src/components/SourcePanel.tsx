@@ -3,7 +3,7 @@ import type { Finding } from '../lib/types';
 import { buildSourceSegments, segmentsToLines } from '../lib/segments';
 import { decodeText } from '../lib/decodeText';
 import { IMPORT_ACCEPT, validateImportFile } from '../lib/importFile';
-import { DEMO_TEXT, DEMO_TEXT_PII } from '../lib/demo';
+import { DEMO_TEXT } from '../lib/demo';
 import { CodeView } from './CodeView';
 import type { Notice } from '../App';
 
@@ -89,14 +89,6 @@ export function SourcePanel({
           >
             Load sample
           </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            title="Synthetic personal/PII sample — best with the Strict profile"
-            onClick={() => onChange(DEMO_TEXT_PII)}
-          >
-            PII sample
-          </button>
           <button type="button" className="btn btn-ghost" onClick={() => fileInput.current?.click()}>
             Import file
           </button>
@@ -121,6 +113,12 @@ export function SourcePanel({
           className="source-input"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && value !== '') {
+              e.preventDefault();
+              onScan();
+            }
+          }}
           placeholder="Paste code, logs, prompts, tickets, or a draft post here. Nothing leaves this device."
           spellCheck={false}
           autoComplete="off"

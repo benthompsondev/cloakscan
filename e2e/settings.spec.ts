@@ -89,14 +89,15 @@ test('strict profile detects labeled person and org names; balanced does not', a
   await page.getByRole('button', { name: 'Load sample' }).click();
   await page.getByRole('button', { name: 'Scan locally' }).click();
   const preview = page.getByRole('region', { name: /Redacted preview/i });
-  await expect(preview).toContainText('Owner: Alex Demo'); // balanced keeps it
+  await expect(preview).toContainText('Reported by: Alex Demo'); // balanced keeps it
+  await expect(preview).toContainText('Alex Demo,Contoso Health,[EMAIL_1]');
 
   await page.getByRole('link', { name: 'Settings' }).click();
   await page.getByRole('radio', { name: /^Strict/ }).check();
   await page.getByRole('link', { name: 'Scan' }).click();
   await page.getByRole('button', { name: 'Scan locally' }).click();
-  await expect(preview).toContainText('Owner: [NAME_1]');
-  await expect(preview).toContainText('Company: [ORG_1]');
+  await expect(preview).toContainText('Reported by: [NAME_1]');
+  await expect(preview).toContainText('[NAME_1],[ORG_1],[EMAIL_1]');
 });
 
 test('toggling an individual rule switches the profile to Custom', async ({ page }) => {

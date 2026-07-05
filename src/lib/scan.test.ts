@@ -111,19 +111,17 @@ describe('demo text end to end', () => {
       'email',
       'ipv4',
       'ipv6',
+      'mac-address',
       'private-key',
       'connection-string',
       'api-key',
       'bearer-token',
-      'secret-assignment',
       'secure-string-literal',
       'windows-user-path',
       'unix-user-path',
       'unc-path',
       'ad-dn',
       'guid-identifier',
-      'ps-identity-param',
-      'ps-server-param',
       'internal-url',
       'internal-hostname',
       'ticket-id',
@@ -137,5 +135,13 @@ describe('demo text end to end', () => {
     const emails = scanText(DEMO_TEXT).filter((f) => f.detectorId === 'email');
     expect(emails.length).toBeGreaterThanOrEqual(2);
     expect(new Set(emails.map((f) => f.placeholder)).size).toBe(1);
+  });
+
+  it('keeps showcase software versions while redacting real addresses', () => {
+    const findings = scanText(DEMO_TEXT);
+    const cleaned = buildCleanText(DEMO_TEXT, findings);
+    expect(cleaned).toContain('agent version 10.0.0.0');
+    expect(cleaned).not.toContain('Host IP: 10.42.16.28');
+    expect(cleaned).not.toContain('Public edge: 203.0.113.24');
   });
 });

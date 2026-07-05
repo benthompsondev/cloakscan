@@ -89,12 +89,25 @@ describe('scan engine configuration', () => {
     expect(withoutEmail.some((f) => f.detectorId === 'ipv4')).toBe(true);
   });
 
-  it('strict profile adds labeled person and organization names on the demo', () => {
+  it('strict profile adds the labeled personal fields in the showcase sample', () => {
+    const balanced = scanText(DEMO_TEXT, {
+      enabledDetectorIds: enabledRuleIds(profileRuleStates('balanced')),
+    });
     const strict = scanText(DEMO_TEXT, {
       enabledDetectorIds: enabledRuleIds(profileRuleStates('strict')),
     });
-    expect(strict.some((f) => f.detectorId === 'person-name')).toBe(true);
-    expect(strict.some((f) => f.detectorId === 'org-name')).toBe(true);
+    for (const id of [
+      'person-name',
+      'org-name',
+      'date-of-birth',
+      'phone-number',
+      'physical-address',
+      'canadian-sin',
+      'health-identifier',
+    ]) {
+      expect(balanced.some((finding) => finding.detectorId === id), id).toBe(false);
+      expect(strict.some((finding) => finding.detectorId === id), id).toBe(true);
+    }
   });
 
   it('does not mutate detector definitions when configured', () => {

@@ -4,7 +4,7 @@ import type { Detector } from '../types';
 const IPV4_RE = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g;
 
 const VERSION_CUE_RE =
-  /(?:\b(?:v|version|ver|rev|build|release|assembly|fileversion|assemblyversion)|\b[a-z][a-z0-9_-]*version)[ \t]*(?:[:=][ \t]*)?$/iu;
+  /(?:\b(?:v|version|ver|rev|build|release|assembly|fileversion|assemblyversion)|\b[a-z][a-z0-9_-]*version)(?:[ \t"'(=:>+]|\[){0,16}$/iu;
 
 export function isValidIpv4(value: string): boolean {
   return value.split('.').every((octet) => {

@@ -116,9 +116,9 @@ test('imports a text file from memory', async ({ page }) => {
   );
 });
 
-test('PII sample with the scan-toolbar Strict profile redacts labeled PII', async ({ page }) => {
+test('the single showcase sample reveals more under Strict', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'PII sample' }).click();
+  await page.getByRole('button', { name: 'Load sample' }).click();
   await page.getByLabel('Detection profile').selectOption('strict');
   await page.getByRole('button', { name: 'Scan locally' }).click();
 
@@ -135,11 +135,17 @@ test('PII sample with the scan-toolbar Strict profile redacts labeled PII', asyn
   ]) {
     await expect(preview).toContainText(placeholder);
   }
-  // v0.7.1: honorifics are name context now — "Dr. Demo" is redacted while
-  // the surrounding free text stays. Names with NO context are still never
-  // guessed (covered by the negative corpus and the stress fixture).
-  await expect(preview).toContainText('escalate to Dr. [NAME_');
-  await expect(preview).not.toContainText('Dr. Demo');
+  await expect(preview).not.toContainText('Bea Example');
+  await expect(preview).toContainText('[NAME_1],[ORG_1],[EMAIL_1]');
+  await expect(preview).toContainText('agent version 10.0.0.0');
+});
+
+test('Ctrl+Enter scans the source text', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Source text input').fill('Contact alex.demo@example.internal');
+  await page.getByLabel('Source text input').press('Control+Enter');
+  await expect(page.getByRole('heading', { name: 'Findings' })).toBeVisible();
+  await expect(page.getByLabel('Sanitized output with placeholders')).toContainText('[EMAIL_1]');
 });
 
 test('category Redact all / Keep all toggle a whole section', async ({ page }) => {

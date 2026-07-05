@@ -83,6 +83,26 @@ describe('ipv4 detector', () => {
     expect(values(ipv4Detector, text)).toEqual([]);
   });
 
+  it('allows short separators between a version cue and dotted quad', () => {
+    const text = [
+      'AssemblyVersion("4.0.0.0")',
+      '<Version>1.0.0.0</Version>',
+      '"version": "1.0.0.0"',
+      'FileVersion = [2.3.4.5]',
+      'build + 3.4.5.6',
+    ].join('\n');
+    expect(values(ipv4Detector, text)).toEqual([]);
+  });
+
+  it('still flags addresses after non-version labels', () => {
+    expect(
+      values(
+        ipv4Detector,
+        'Host IP: 10.20.30.40\nDNS server: 10.0.0.53\nPublic edge: 203.0.113.24',
+      ),
+    ).toEqual(['10.20.30.40', '10.0.0.53', '203.0.113.24']);
+  });
+
   it('ignores non-sensitive special-purpose IPv4 values', () => {
     expect(
       values(ipv4Detector, 'loopback 127.0.0.1 127.42.3.9 bind 0.0.0.0 broadcast 255.255.255.255'),
