@@ -3,9 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="CloakGuard — sanitize sensitive text on-device before it leaves your machine." />
+
+    <title>CloakGuard — redact secrets and personal data from text, on your device</title>
+    <meta
+      name="description"
+      content="CloakGuard finds and redacts secrets, API keys, and personal data in text on your own device before you share it. No cloud, no account. Try it in your browser."
+    />
+    <link rel="canonical" href="https://benthompsondev.github.io/cloakguard/" />
+
+    <!-- Social cards. Plain meta tags only — read by crawlers, never fetched by
+         the page, so the strict runtime CSP is unaffected. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CloakGuard" />
+    <meta property="og:title" content="CloakGuard — local-first text redactor for secrets and PII" />
+    <meta
+      property="og:description"
+      content="A local-first tool for cleaning secrets, credentials, infrastructure details, and personal data out of code, logs, prompts, and support text before you share them. Runs on your device — no backend, no telemetry. Try the browser demo or install on Windows or Linux."
+    />
+    <meta property="og:url" content="https://benthompsondev.github.io/cloakguard/" />
+    <meta
+      property="og:image"
+      content="https://raw.githubusercontent.com/benthompsondev/cloakguard/main/docs/screenshots/scan-desktop-1440x900.png"
+    />
+    <meta property="og:image:alt" content="CloakGuard scanning text locally and showing the redacted output" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CloakGuard — local-first text redactor for secrets and PII" />
+    <meta
+      name="twitter:description"
+      content="Clean secrets, credentials, and personal data out of text on your device before you share it. No cloud, no account."
+    />
+    <meta
+      name="twitter:image"
+      content="https://raw.githubusercontent.com/benthompsondev/cloakguard/main/docs/screenshots/scan-desktop-1440x900.png"
+    />
+
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <title>CloakGuard — local text sanitizer</title>
   </head>
   <body>
     <div id="root"></div>
