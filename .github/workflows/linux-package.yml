@@ -84,7 +84,7 @@ jobs:
           cp src-tauri/target/release/bundle/appimage/*.AppImage.sig out/
           (cd out && sha256sum * > SHA256SUMS-linux.txt && cat SHA256SUMS-linux.txt)
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: cloakguard-linux-x86_64
           path: out/
