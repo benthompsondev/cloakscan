@@ -87,6 +87,13 @@ export function updateErrorMessage(error: unknown, action: 'check' | 'install'):
     return 'The update signature could not be verified. Nothing was installed.';
   }
 
+  // The current platform has no entry in the release manifest — e.g. a Linux
+  // build checking a release that only published a Windows artifact. Retrying
+  // never helps, so say so honestly and point to the releases page instead.
+  if (/platform.*(was )?not found|not found on the response|no (matching )?platform|unsupported platform|target.*not (found|available)/i.test(detail)) {
+    return 'No desktop update is published for this platform yet. Check the releases page on GitHub for the latest download.';
+  }
+
   if (/network|fetch|dns|connection|timed? ?out|http|404|release json/i.test(detail)) {
     return 'GitHub could not be reached for update information. Check your connection and try again.';
   }

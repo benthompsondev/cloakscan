@@ -34,4 +34,11 @@ describe('updateErrorMessage', () => {
       'Check your connection',
     );
   });
+
+  it('gives an honest message when the platform is not in the manifest', () => {
+    const detail = 'the platform `linux-x86_64` was not found on the response `platforms` object';
+    const message = updateErrorMessage(new Error(detail), 'check');
+    expect(message).toContain('No desktop update is published for this platform yet');
+    expect(message).not.toContain('try again');
+  });
 });
