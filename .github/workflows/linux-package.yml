@@ -29,7 +29,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
             libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev \
-            xvfb libfuse2
+            xvfb libfuse2 appstream desktop-file-utils
 
       - name: Install dependencies
         run: npm ci
@@ -48,6 +48,15 @@ jobs:
           file "$DEB" | grep -q . # sanity: file exists and is readable
           dpkg-deb --field "$DEB" Architecture | grep -qx amd64
           dpkg-deb --contents "$DEB" | grep -q 'usr/share/metainfo/dev.benthompson.cloakguard.metainfo.xml'
+          DESCRIPTION=$(dpkg-deb --field "$DEB" Description)
+          printf '%s\n' "$DESCRIPTION"
+          printf '%s\n' "$DESCRIPTION" | grep -q 'scans pasted text locally'
+
+          EXTRACTED=$(mktemp -d)
+          dpkg-deb --extract "$DEB" "$EXTRACTED"
+          appstreamcli validate --no-net \
+            "$EXTRACTED/usr/share/metainfo/dev.benthompson.cloakguard.metainfo.xml"
+          desktop-file-validate "$EXTRACTED/usr/share/applications/CloakGuard.desktop"
 
       - name: Verify AppImage architecture and signature file
         run: |

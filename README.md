@@ -20,7 +20,7 @@ I built it because manually checking every script and log for hostnames, usernam
 
 ### Windows
 
-Download `CloakGuard-Setup-1.1.0-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakguard/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
+Download `CloakGuard-Setup-1.1.1-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakguard/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
 
 The installer is currently unsigned, so Windows SmartScreen may show a warning. Verify the published SHA-256 checksum before running it.
 
@@ -32,7 +32,7 @@ For Debian 12, Ubuntu 22.04, or newer, install the `.deb`:
 
 ```bash
 cd ~/Downloads
-sudo apt install ./CloakGuard_1.1.0_amd64.deb
+sudo apt install ./CloakGuard_1.1.1_amd64.deb
 ```
 
 Launch it from your applications menu or run:
@@ -45,8 +45,8 @@ The AppImage is portable and does not install anything:
 
 ```bash
 cd ~/Downloads
-chmod +x CloakGuard_1.1.0_amd64.AppImage
-./CloakGuard_1.1.0_amd64.AppImage
+chmod +x CloakGuard_1.1.1_amd64.AppImage
+./CloakGuard_1.1.1_amd64.AppImage
 ```
 
 See [the Linux guide](docs/linux.md) for updates, uninstall steps, and troubleshooting.
@@ -126,12 +126,13 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Project status
 
-Current release: **v1.1.0**
+Current release: **v1.1.1**
 
 - Windows and Linux x86_64 packages now ship together from the same release.
 - Windows and AppImage builds can apply signed updates when the user asks. The `.deb` package checks for new versions but updates manually.
+- Debian packages now include a complete description and richer AppStream details for software managers that read them.
 - Forty focused rules include 33 distinctive provider, webhook, and signed-URL patterns.
-- The name-and-term review panel filters common PowerShell noise and puts likely multi-word names and project terms first.
+- The name-and-term review panel filters common PowerShell noise, puts likely multi-word terms first, and lets you dismiss a suggestion for the current session.
 - Balanced, Strict, Maximum, and Code & secrets give people useful starting points without hiding individual rule controls.
 - Session terms and Cloak Lists can use their own safe placeholder label and format.
 - The built-in sample now gives one clear comparison between Balanced and Strict.

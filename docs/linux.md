@@ -40,6 +40,17 @@ CloakGuard from your application menu or with `cloakguard`.
   The `.deb` also includes AppStream metadata so compatible software managers
   can identify CloakGuard as an installed application.
 
+Ubuntu App Center can still show **Unknown publisher** or **License unknown**
+for a sideloaded `.deb`, and it may not offer an uninstall action under
+*Manage*. Those labels come from App Center's handling of sideloaded packages,
+not missing fields CloakGuard can fill inside the package. GNOME Software and
+KDE Discover can read the bundled AppStream details. The supported uninstall
+command remains:
+
+```bash
+sudo apt remove cloak-guard
+```
+
 ## Run the AppImage (portable)
 
 ```bash
@@ -89,7 +100,8 @@ Build prerequisites on Debian/Ubuntu (the same list CI installs):
 ```bash
 sudo apt update
 sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
-  libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+  libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev \
+  appstream desktop-file-utils
 ```
 
 Plus Node 20.19+/22.12+ and a stable Rust toolchain (`rustup`).

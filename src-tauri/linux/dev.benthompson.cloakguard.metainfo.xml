@@ -17,8 +17,31 @@
   </description>
   <launchable type="desktop-id">CloakGuard.desktop</launchable>
   <url type="homepage">https://github.com/benthompsondev/cloakguard</url>
+  <url type="bugtracker">https://github.com/benthompsondev/cloakguard/issues</url>
+  <content_rating type="oars-1.1"/>
+  <developer id="dev.benthompson">
+    <name>Ben Thompson</name>
+  </developer>
   <developer_name>Ben Thompson</developer_name>
+  <keywords>
+    <keyword>redact</keyword>
+    <keyword>sanitize</keyword>
+    <keyword>secrets</keyword>
+    <keyword>privacy</keyword>
+    <keyword>PII</keyword>
+  </keywords>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/benthompsondev/cloakguard/main/docs/screenshots/scan-desktop-1440x900.png</image>
+      <caption>Review detected values and the cleaned text before sharing.</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/benthompsondev/cloakguard/main/docs/screenshots/settings-rules-1440x900.png</image>
+      <caption>Choose which local detection rules are enabled.</caption>
+    </screenshot>
+  </screenshots>
   <releases>
+    <release version="1.1.1" date="2026-07-06"/>
     <release version="1.1.0" date="2026-07-06"/>
   </releases>
 </component>

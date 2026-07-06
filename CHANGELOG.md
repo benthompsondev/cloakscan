@@ -2,6 +2,25 @@
 
 This file tracks the public CloakGuard releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.1] - 2026-07-06
+
+### Added
+
+- Added a complete Debian package description plus richer AppStream details, screenshots, keywords, content rating, developer, and issue links.
+- Added package-time validation for the metainfo and desktop entry extracted from the built `.deb`.
+- Added a per-suggestion **Dismiss** action that lasts only for the current session.
+
+### Changed
+
+- Filtered a few remaining built-in sample labels such as NIC, DOB, SIN, and AWS from the possible-name review panel.
+- Documented the metadata and uninstall limits of Ubuntu App Center for sideloaded Debian packages.
+
+### Safety
+
+- Dismissed suggestions stay in memory only. They are never written to preferences or other storage and return after the session is cleared or the app is reopened.
+- Scanning, the v2 preference schema, CSP, desktop capabilities, telemetry, and background-network behavior are unchanged.
+- Updater packages are signed for Tauri verification. The Windows installer itself remains unsigned, so verify its published SHA-256 checksum.
+
 ## [1.1.0] - 2026-07-06
 
 ### Added
@@ -160,6 +179,7 @@ This file tracks the public CloakGuard releases. The format follows [Keep a Chan
 - Kept scanning local with no backend, account, or telemetry.
 - Documented the unsigned-installer warning and the need to review cleaned text before sharing.
 
+[1.1.1]: https://github.com/benthompsondev/cloakguard/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/benthompsondev/cloakguard/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/benthompsondev/cloakguard/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/benthompsondev/cloakguard/compare/v0.9.0...v1.0.0

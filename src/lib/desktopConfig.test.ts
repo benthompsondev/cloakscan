@@ -80,6 +80,9 @@ describe('shared tauri.conf.json privacy surface', () => {
   it('uses the public project identity in installer metadata', () => {
     expect(sharedConf.bundle.publisher).toBe('CloakGuard Project');
     expect(sharedConf.bundle.homepage).toBe('https://github.com/benthompsondev/cloakguard');
+    expect(sharedConf.bundle.longDescription).toContain('scans pasted text locally');
+    expect(sharedConf.bundle.longDescription).toContain('not uploaded');
+    expect(sharedConf.bundle.longDescription).toContain('review the cleaned text');
   });
 
   it('creates signed updater artifacts against the GitHub release manifest', () => {
@@ -153,6 +156,16 @@ describe('platform overlays', () => {
     expect(linuxMetainfo).toContain('<id>dev.benthompson.cloakguard</id>');
     expect(linuxMetainfo).toContain('<launchable type="desktop-id">CloakGuard.desktop</launchable>');
     expect(linuxMetainfo).toContain('<project_license>MIT</project_license>');
+    expect(linuxMetainfo).toContain('<content_rating type="oars-1.1"/>');
+    expect(linuxMetainfo).toContain('<developer id="dev.benthompson">');
+    expect(linuxMetainfo).toContain(
+      '<url type="bugtracker">https://github.com/benthompsondev/cloakguard/issues</url>',
+    );
+    for (const keyword of ['redact', 'sanitize', 'secrets', 'privacy', 'PII']) {
+      expect(linuxMetainfo).toContain(`<keyword>${keyword}</keyword>`);
+    }
+    expect(linuxMetainfo).toContain('<screenshots>');
+    expect(linuxMetainfo).toContain('raw.githubusercontent.com');
   });
 
   it('both merged platforms keep the privacy invariants', () => {
