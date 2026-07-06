@@ -1,22 +1,22 @@
 # CloakGuard
 
-[▶ Try the live demo](https://benthompsondev.github.io/cloakguard/) — runs entirely in your browser, nothing is uploaded. Or [download the Windows app](https://github.com/benthompsondev/cloakguard/releases/latest) for offline use.
+[▶ Try the live demo](https://benthompsondev.github.io/cloakguard/) — runs entirely in your browser, nothing is uploaded. Or [download the desktop app](https://github.com/benthompsondev/cloakguard/releases/latest) for offline use on Windows or Linux.
 
 [![CI](https://github.com/benthompsondev/cloakguard/actions/workflows/ci.yml/badge.svg)](https://github.com/benthompsondev/cloakguard/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/benthompsondev/cloakguard)](https://github.com/benthompsondev/cloakguard/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-CloakGuard is a local-first Windows app for cleaning code, logs, prompts, support tickets, and draft posts before sharing them. Scanning runs on your device. There is no account, backend, telemetry, or upload.
+CloakGuard is a local-first desktop app (Windows and Linux) for cleaning code, logs, prompts, support tickets, and draft posts before sharing them. Scanning runs on your device. There is no account, backend, telemetry, or upload.
 
 I built it because manually checking every script and log for hostnames, usernames, paths, tokens, and organization-specific details is slow and easy to get wrong. The workflow is deliberately simple: paste text, scan it locally, review every replacement, and copy the cleaned version.
 
 ![CloakGuard showing a local scan and review](docs/screenshots/scan-desktop-1440x900.png)
 
-## Download for Windows
+## Download
 
-Download the latest setup executable from [GitHub Releases](https://github.com/benthompsondev/cloakguard/releases/latest). The setup EXE is the only file most people need. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
+**Windows:** download the latest setup executable from [GitHub Releases](https://github.com/benthompsondev/cloakguard/releases/latest). The setup EXE is the only file most people need. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection. The installer is currently unsigned, so Windows SmartScreen may show a warning. Verify the SHA-256 value published with the release before running it.
 
-The installer is currently unsigned, so Windows SmartScreen may show a warning. Verify the SHA-256 value published with the release before running it.
+**Linux (x86_64):** grab the `.deb` (Debian 12 / Ubuntu 22.04 or newer) or the portable AppImage from the same releases page — available starting with the first release after v1.0.1. Install steps, update behavior, and troubleshooting are in [docs/linux.md](docs/linux.md).
 
 ## Run from source
 
@@ -36,7 +36,7 @@ Both scripts check that a supported Node.js is installed: **Node 20.19+ or 22.12
 
 **To stop the app:** press `Ctrl+C` in the terminal window where it is running.
 
-Developers can build the Windows desktop installer with `npm run desktop:build`; details are in [docs/desktop.md](docs/desktop.md).
+Developers can build the desktop packages with `npm run desktop:build` — it produces the NSIS installer on Windows ([docs/desktop.md](docs/desktop.md)) and the `.deb` + AppImage on Linux ([docs/linux.md](docs/linux.md)).
 
 **Developer setup** (`npm run dev` is the development path, with hot reload and no CSP):
 
@@ -85,7 +85,7 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Privacy model
 
-- All scanning happens locally. Content is never uploaded, and CloakGuard has no telemetry or analytics. The desktop app contacts GitHub only when you click **Check for updates**. Browser and Pages builds do not show that control. The production launcher binds to `127.0.0.1`.
+- All scanning happens locally. Content is never uploaded, and CloakGuard has no telemetry or analytics. The desktop app (Windows and Linux) contacts GitHub only when you click **Check for updates**. Browser and Pages builds do not show that control. The production launcher binds to `127.0.0.1`.
 - Content is never persisted. Refresh or **Clear session** wipes source text, findings, output, and session-only custom terms. The only optional storage is the narrow preference configuration described above.
 - Imported files are read with the browser File API and never uploaded. Downloads are generated in memory.
 - Detected values are masked in the UI and never logged. The production build also has a strict Content Security Policy that blocks outbound browser connection APIs.

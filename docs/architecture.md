@@ -40,15 +40,17 @@ The production build has a strict Content Security Policy. Outbound browser conn
 
 ## Desktop boundary
 
-The Windows app uses a Tauri 2 shell around the same client-side interface. Its only app-specific Rust command is `export_clean_text`, which writes a user-approved export through a build-time access rule. Scanning and redaction still happen in the React app.
+The desktop app uses a Tauri 2 shell around the same client-side interface, on Windows (WebView2) and Linux x86_64 (WebKitGTK). Its only app-specific Rust command is `export_clean_text`, which writes a user-approved export through a build-time access rule. Scanning and redaction still happen in the React app.
+
+The Tauri configuration is split into a shared platform-neutral file (`tauri.conf.json`) plus per-platform overlays (`tauri.windows.conf.json`, `tauri.linux.conf.json`) that hold only packaging and webview details. Security, capabilities, the updater key, and the endpoint live in the shared file, and a unit test fails if an overlay tries to change them.
 
 ## Updates
 
-The Windows app can check GitHub for a newer release, but only after the user clicks **Check for updates**. There is no launch check, timer, background polling, or telemetry.
+The desktop app can check GitHub for a newer release, but only after the user clicks **Check for updates**. There is no launch check, timer, background polling, or telemetry.
 
 The updater runs through Tauri's Rust plugin. The webview asks the plugin to check, download, and install a signed package; it does not make the network request itself. The production CSP stays unchanged at `connect-src 'none'`, and browser builds do not show update controls.
 
-Each update artifact is signed with CloakGuard's updater key. The public key ships with the app so Tauri can reject a package with the wrong signature. This verifies the update package, but it is separate from Windows code signing: the installer is still unsigned and may show a SmartScreen warning.
+Each update artifact is signed with CloakGuard's updater key. The public key ships with the app so Tauri can reject a package with the wrong signature. This verifies the update package, but it is separate from OS code signing: the Windows installer is still unsigned and may show a SmartScreen warning. On Linux, the AppImage is the auto-update artifact; the `.deb` package is updated by installing the newer package yourself (see [docs/linux.md](linux.md)).
 
 ## Why there is no universal name or company dictionary
 

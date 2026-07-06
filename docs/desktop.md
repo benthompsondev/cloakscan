@@ -1,5 +1,7 @@
 # CloakGuard for Windows (desktop)
 
+> Looking for Linux? The `.deb` / AppImage guide is [docs/linux.md](linux.md).
+
 CloakGuard ships to Windows users as **one setup executable**:
 `release/windows/CloakGuard-Setup-1.0.1-x64.exe`. Download it, run it, and
 launch CloakGuard from the Start Menu. No Node, npm, Rust, source folders,
