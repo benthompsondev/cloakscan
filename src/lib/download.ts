@@ -10,11 +10,12 @@ export type ExportResult = 'downloaded' | 'saved' | 'cancelled';
  * after the click so no reference to the content outlives the action.
  * Resolves 'downloaded'.
  *
- * Desktop (Tauri): WebView2 silently ignores blob-anchor downloads, so the
- * shell exposes exactly one command that opens a native save dialog and
- * writes the text to the user-chosen path — no other filesystem access
- * exists in the app. Resolves 'saved', or 'cancelled' when the user closes
- * the dialog without choosing a destination (nothing is written).
+ * Desktop (Tauri): embedded webviews (WebView2 on Windows, WebKitGTK on
+ * Linux) do not reliably honor blob-anchor downloads, so the shell exposes
+ * exactly one command that opens a native save dialog and writes the text
+ * to the user-chosen path — no other filesystem access exists in the app.
+ * Resolves 'saved', or 'cancelled' when the user closes the dialog without
+ * choosing a destination (nothing is written).
  */
 export async function downloadTextFile(filename: string, text: string): Promise<ExportResult> {
   if (isTauri()) {

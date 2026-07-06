@@ -11,10 +11,10 @@ publish = false
 
 # The desktop shell is deliberately small. Scanning logic lives in the
 # bundled web frontend. The one app-specific IPC command is export_clean_text:
-# WebView2 silently ignores blob-anchor downloads, so saving the cleaned
-# output needs a native save dialog + a write to exactly that user-chosen
-# path. The frontend has no dialog or filesystem permissions. The official
-# updater and process plugins are limited by capabilities/main.json.
+# embedded webviews do not reliably honor blob-anchor downloads, so saving
+# the cleaned output needs a native save dialog + a write to exactly that
+# user-chosen path. The frontend has no dialog or filesystem permissions.
+# The official updater and process plugins are limited by capabilities/main.json.
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

@@ -127,8 +127,8 @@ export function UpdatePanel() {
         )}
       </div>
 
-      <p className="muted update-windows-note">
-        On Windows, CloakGuard closes while the installer applies the update.
+      <p className="muted update-restart-note">
+        CloakGuard may close while the update is applied.
       </p>
     </section>
   );

@@ -2041,7 +2041,7 @@ body {
   color: var(--high);
 }
 
-.update-windows-note {
+.update-restart-note {
   margin: 14px 0 0;
   font-size: 12px;
 }

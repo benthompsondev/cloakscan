@@ -84,7 +84,7 @@ export function SourcePanel({
           <button
             type="button"
             className="btn btn-ghost"
-            title="Synthetic IT/admin log sample"
+            title="Synthetic IT and personal-data sample"
             onClick={() => onChange(DEMO_TEXT)}
           >
             Load sample

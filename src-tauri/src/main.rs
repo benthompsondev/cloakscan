@@ -2,8 +2,9 @@
 // app-specific IPC command is export_clean_text below, and the build-time
 // ACL (build.rs) rejects every other app command. Tauri's updater and process
 // plugins expose only the permissions listed in capabilities/main.json.
-// Release builds hide the console window and have devtools disabled.
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// Windows release builds hide the console window; devtools stay disabled
+// in every release build on every platform.
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 use std::path::Path;
 
@@ -18,11 +19,12 @@ fn write_export(path: &Path, contents: &str) -> Result<(), String> {
 
 /// Save the cleaned text through a native save dialog.
 ///
-/// WebView2 inside Tauri ignores the browser blob-download used by the web
-/// build, so the desktop app asks the user for a destination and writes the
-/// sanitized text to exactly that path — the narrowest write access
-/// possible. Returns false when the user cancels. Never reads any file and
-/// never writes anywhere the user did not explicitly pick.
+/// Embedded webviews (WebView2 on Windows, WebKitGTK on Linux) do not
+/// reliably honor the browser blob-download used by the web build, so the
+/// desktop app asks the user for a destination and writes the sanitized
+/// text to exactly that path — the narrowest write access possible.
+/// Returns false when the user cancels. Never reads any file and never
+/// writes anywhere the user did not explicitly pick.
 ///
 /// Deliberately a sync command: Tauri runs it on a worker thread, where the
 /// blocking dialog call is safe (an async command would block the runtime).
