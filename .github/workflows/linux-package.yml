@@ -47,6 +47,7 @@ jobs:
           dpkg-deb --contents "$DEB"
           file "$DEB" | grep -q . # sanity: file exists and is readable
           dpkg-deb --field "$DEB" Architecture | grep -qx amd64
+          dpkg-deb --contents "$DEB" | grep -q 'usr/share/metainfo/dev.benthompson.cloakguard.metainfo.xml'
 
       - name: Verify AppImage architecture and signature file
         run: |

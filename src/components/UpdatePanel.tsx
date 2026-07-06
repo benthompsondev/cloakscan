@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { relaunch } from '@tauri-apps/plugin-process';
 import type { Update } from '@tauri-apps/plugin-updater';
 import { APP_VERSION } from '../lib/version';
 import {
+  canSelfUpdate,
   checkForUpdate,
   installUpdate,
   updateErrorMessage,
@@ -26,6 +27,21 @@ function progressText(downloaded: number, total?: number): string {
 export function UpdatePanel() {
   const [state, setState] = useState<UpdateState>({ kind: 'idle' });
   const [pendingUpdate, setPendingUpdate] = useState<Update | null>(null);
+  const [supportsSelfUpdate, setSupportsSelfUpdate] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void canSelfUpdate()
+      .then((supported) => {
+        if (active) setSupportsSelfUpdate(supported);
+      })
+      .catch(() => {
+        if (active) setSupportsSelfUpdate(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const checkNow = async () => {
     setState({ kind: 'checking' });
@@ -97,13 +113,32 @@ export function UpdatePanel() {
         {state.kind === 'available' && (
           <>
             <p className="update-status">Update available: v{state.version}</p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => void downloadAndInstall()}
-            >
-              Download and install
-            </button>
+            {supportsSelfUpdate === null ? (
+              <p className="muted">Checking how this package should be updated…</p>
+            ) : supportsSelfUpdate ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void downloadAndInstall()}
+              >
+                Download and install
+              </button>
+            ) : (
+              <>
+                <p className="muted">
+                  This package is updated manually. Download the newer <code>.deb</code> from
+                  GitHub and install it over this version.
+                </p>
+                <a
+                  className="btn btn-primary"
+                  href="https://github.com/benthompsondev/cloakguard/releases/latest"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open GitHub Releases
+                </a>
+              </>
+            )}
           </>
         )}
         {state.kind === 'installing' && (
@@ -128,7 +163,9 @@ export function UpdatePanel() {
       </div>
 
       <p className="muted update-restart-note">
-        CloakGuard may close while the update is applied.
+        {supportsSelfUpdate === false
+          ? 'Debian packages are updated manually through the downloaded .deb file.'
+          : 'CloakGuard may close while the update is applied.'}
       </p>
     </section>
   );

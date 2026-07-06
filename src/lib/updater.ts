@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core';
 import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater';
 import { APP_VERSION } from './version';
 
@@ -80,6 +81,10 @@ export async function installUpdate(
   await update.downloadAndInstall(onEvent, { timeout: 120_000 });
 }
 
+export async function canSelfUpdate(): Promise<boolean> {
+  return invoke<boolean>('can_self_update');
+}
+
 export function updateErrorMessage(error: unknown, action: 'check' | 'install'): string {
   const detail = error instanceof Error ? error.message : String(error);
 
@@ -90,7 +95,11 @@ export function updateErrorMessage(error: unknown, action: 'check' | 'install'):
   // The current platform has no entry in the release manifest — e.g. a Linux
   // build checking a release that only published a Windows artifact. Retrying
   // never helps, so say so honestly and point to the releases page instead.
-  if (/platform.*(was )?not found|not found on the response|no (matching )?platform|unsupported platform|target.*not (found|available)/i.test(detail)) {
+  if (
+    /platform.*(was )?not found|not found on the response|none of the fallback platforms.*were found|no (matching )?platform|unsupported platform|target.*not (found|available)/i.test(
+      detail,
+    )
+  ) {
     return 'No desktop update is published for this platform yet. Check the releases page on GitHub for the latest download.';
   }
 

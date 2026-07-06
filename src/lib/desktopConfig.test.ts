@@ -53,6 +53,10 @@ const linuxOnly = linuxOverlay as any;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 const capability = readJson('src-tauri', 'capabilities', 'main.json');
 const pkg = readJson('package.json');
+const linuxMetainfo = readFileSync(
+  join(root, 'src-tauri', 'linux', 'dev.benthompson.cloakguard.metainfo.xml'),
+  'utf8',
+);
 
 describe('shared tauri.conf.json privacy surface', () => {
   it('does not expose a global Tauri object to the page', () => {
@@ -141,6 +145,16 @@ describe('platform overlays', () => {
     expect(linuxConf.app.windows[0].additionalBrowserArgs).toBeUndefined();
   });
 
+  it('Linux installs AppStream metadata for desktop software managers', () => {
+    expect(linuxConf.bundle.linux.deb.files).toEqual({
+      '/usr/share/metainfo/dev.benthompson.cloakguard.metainfo.xml':
+        'linux/dev.benthompson.cloakguard.metainfo.xml',
+    });
+    expect(linuxMetainfo).toContain('<id>dev.benthompson.cloakguard</id>');
+    expect(linuxMetainfo).toContain('<launchable type="desktop-id">CloakGuard.desktop</launchable>');
+    expect(linuxMetainfo).toContain('<project_license>MIT</project_license>');
+  });
+
   it('both merged platforms keep the privacy invariants', () => {
     for (const conf of [windowsConf, linuxConf]) {
       expect(conf.app.withGlobalTauri).toBe(false);
@@ -158,6 +172,7 @@ describe('capability grants', () => {
   it('grants only file export and the user-triggered update flow', () => {
     expect(capability.permissions).toEqual([
       'allow-export-clean-text',
+      'allow-can-self-update',
       'updater:default',
       'process:allow-restart',
     ]);

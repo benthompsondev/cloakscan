@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.benthompson.cloakguard</id>
+  <name>CloakGuard</name>
+  <summary>Sanitize sensitive text before sharing it</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>
+      CloakGuard scans text locally for secrets, personal data, infrastructure
+      details, and work-specific terms before the text is shared.
+    </p>
+    <p>
+      Scanning runs on this device. CloakGuard has no account, backend,
+      telemetry, or content upload.
+    </p>
+  </description>
+  <launchable type="desktop-id">CloakGuard.desktop</launchable>
+  <url type="homepage">https://github.com/benthompsondev/cloakguard</url>
+  <developer_name>Ben Thompson</developer_name>
+  <releases>
+    <release version="1.1.0" date="2026-07-06"/>
+  </releases>
+</component>

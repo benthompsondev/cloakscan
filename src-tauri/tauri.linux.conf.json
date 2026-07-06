@@ -1,6 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "bundle": {
-    "targets": ["deb", "appimage"]
+    "targets": ["deb", "appimage"],
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/metainfo/dev.benthompson.cloakguard.metainfo.xml": "linux/dev.benthompson.cloakguard.metainfo.xml"
+        }
+      }
+    }
   }
 }

@@ -17,6 +17,23 @@ fn write_export(path: &Path, contents: &str) -> Result<(), String> {
     std::fs::write(path, contents.as_bytes()).map_err(|e| e.to_string())
 }
 
+fn can_self_update_for(is_linux: bool, appimage_path_is_set: bool) -> bool {
+    !is_linux || appimage_path_is_set
+}
+
+/// Whether this package can safely replace itself through Tauri's updater.
+///
+/// Windows installers and Linux AppImages can. A Debian package must be
+/// replaced through the package manager, so Linux only returns true when the
+/// AppImage runtime marker is present. The marker's value is never exposed.
+#[tauri::command]
+fn can_self_update() -> bool {
+    can_self_update_for(
+        cfg!(target_os = "linux"),
+        std::env::var_os("APPIMAGE").is_some(),
+    )
+}
+
 /// Save the cleaned text through a native save dialog.
 ///
 /// Embedded webviews (WebView2 on Windows, WebKitGTK on Linux) do not
@@ -55,14 +72,14 @@ fn main() {
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![export_clean_text])
+        .invoke_handler(tauri::generate_handler![export_clean_text, can_self_update])
         .run(tauri::generate_context!())
         .expect("error while running CloakGuard");
 }
 
 #[cfg(test)]
 mod tests {
-    use super::write_export;
+    use super::{can_self_update_for, write_export};
 
     fn temp_file(name: &str) -> std::path::PathBuf {
         std::env::temp_dir().join(format!("cloakguard-test-{}-{name}", std::process::id()))
@@ -104,5 +121,20 @@ mod tests {
             "writing into a missing directory must fail"
         );
         assert!(!path.exists());
+    }
+
+    #[test]
+    fn windows_packages_can_self_update() {
+        assert!(can_self_update_for(false, false));
+    }
+
+    #[test]
+    fn linux_appimages_can_self_update() {
+        assert!(can_self_update_for(true, true));
+    }
+
+    #[test]
+    fn linux_debian_packages_use_manual_updates() {
+        assert!(!can_self_update_for(true, false));
     }
 }

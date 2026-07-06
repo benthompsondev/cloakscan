@@ -1,5 +1,15 @@
-import { describe, expect, it } from 'vitest';
-import { compareVersions, updateErrorMessage } from './updater';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { canSelfUpdate, compareVersions, updateErrorMessage } from './updater';
+
+const tauriCore = vi.hoisted(() => ({
+  invoke: vi.fn(),
+}));
+
+vi.mock('@tauri-apps/api/core', () => tauriCore);
+
+beforeEach(() => {
+  tauriCore.invoke.mockReset();
+});
 
 describe('compareVersions', () => {
   it('compares major, minor, and patch versions', () => {
@@ -40,5 +50,26 @@ describe('updateErrorMessage', () => {
     const message = updateErrorMessage(new Error(detail), 'check');
     expect(message).toContain('No desktop update is published for this platform yet');
     expect(message).not.toContain('try again');
+  });
+
+  it('handles the real Tauri fallback-platform error without suggesting a retry', () => {
+    const detail =
+      'None of the fallback platforms `["linux-x86_64", "linux-amd64"]` were found in the response `platforms` object';
+    const message = updateErrorMessage(detail, 'check');
+    expect(message).toContain('No desktop update is published for this platform yet');
+    expect(message).not.toContain('try again');
+  });
+
+  it('handles Tauri release-fetch failures as network errors', () => {
+    const detail = 'Could not fetch a valid release JSON from the remote';
+    expect(updateErrorMessage(detail, 'check')).toContain('Check your connection');
+  });
+});
+
+describe('canSelfUpdate', () => {
+  it('asks only for the read-only desktop update capability', async () => {
+    tauriCore.invoke.mockResolvedValue(false);
+    await expect(canSelfUpdate()).resolves.toBe(false);
+    expect(tauriCore.invoke).toHaveBeenCalledWith('can_self_update');
   });
 });
