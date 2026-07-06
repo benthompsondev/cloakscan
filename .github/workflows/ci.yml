@@ -49,3 +49,40 @@ jobs:
 
       - name: Verify the desktop shell
         run: npm run desktop:verify
+
+  # Ubuntu 22.04 on purpose: it is the oldest supported target
+  # (Debian 12 / Ubuntu 22.04+), so building and testing against its
+  # WebKitGTK and glibc keeps the packages compatible with that baseline.
+  linux-desktop-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Tauri Linux prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Full web verify (audit, lint, unit, build, e2e)
+        run: npm run verify
+
+      - name: Rust formatting
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+
+      - name: Rust lints
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+
+      - name: Verify the desktop shell
+        run: npm run desktop:verify

@@ -1,0 +1,91 @@
+name: Linux packaging
+
+# Manually triggered only. Builds the x86_64 Linux packages (.deb + AppImage,
+# with the signed updater artifact for the AppImage) and uploads them as
+# workflow artifacts for inspection. It never creates or publishes a GitHub
+# release — attaching artifacts to a release stays a deliberate, separate step.
+on:
+  workflow_dispatch:
+
+jobs:
+  package-linux-x86_64:
+    # Ubuntu 22.04 on purpose: building against its WebKitGTK/glibc keeps the
+    # packages installable on the supported baseline (Debian 12 / Ubuntu 22.04+).
+    runs-on: ubuntu-22.04
+    env:
+      # Updater signing. GitHub masks these in logs; no step may echo them.
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Tauri Linux prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev \
+            xvfb libfuse2
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build .deb and AppImage
+        run: npm run desktop:build
+
+      - name: Inspect the Debian package
+        run: |
+          set -euo pipefail
+          DEB=$(ls src-tauri/target/release/bundle/deb/*.deb)
+          echo "== dpkg-deb --info =="
+          dpkg-deb --info "$DEB"
+          echo "== dpkg-deb --contents =="
+          dpkg-deb --contents "$DEB"
+          file "$DEB" | grep -q . # sanity: file exists and is readable
+          dpkg-deb --field "$DEB" Architecture | grep -qx amd64
+
+      - name: Verify AppImage architecture and signature file
+        run: |
+          set -euo pipefail
+          APPIMAGE=$(ls src-tauri/target/release/bundle/appimage/*.AppImage)
+          file "$APPIMAGE"
+          file "$APPIMAGE" | grep -q 'x86-64'
+          SIG="$APPIMAGE.sig"
+          test -s "$SIG" || { echo "Missing or empty updater signature: $SIG"; exit 1; }
+
+      - name: AppImage launch smoke test (bounded, under Xvfb)
+        run: |
+          set -uo pipefail
+          APPIMAGE=$(ls src-tauri/target/release/bundle/appimage/*.AppImage)
+          chmod +x "$APPIMAGE"
+          xvfb-run -a "$APPIMAGE" &
+          APP_PID=$!
+          sleep 20
+          if kill -0 "$APP_PID" 2>/dev/null; then
+            echo "AppImage launched and stayed alive for 20s."
+            kill "$APP_PID" || true
+            wait "$APP_PID" 2>/dev/null || true
+          else
+            wait "$APP_PID"
+            echo "AppImage exited early (status $?)."
+            exit 1
+          fi
+
+      - name: Stage artifacts and checksums
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cp src-tauri/target/release/bundle/deb/*.deb out/
+          cp src-tauri/target/release/bundle/appimage/*.AppImage out/
+          cp src-tauri/target/release/bundle/appimage/*.AppImage.sig out/
+          (cd out && sha256sum * > SHA256SUMS-linux.txt && cat SHA256SUMS-linux.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloakguard-linux-x86_64
+          path: out/
+          if-no-files-found: error
