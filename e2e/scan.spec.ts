@@ -73,6 +73,29 @@ test('suggested terms stay inert until the user hides one for the session', asyn
   );
 });
 
+test('candidate suggestions can be dismissed for this session only', async ({ page }) => {
+  await page.goto('/');
+  await loadDemoAndScan(page);
+
+  const panel = page.getByRole('region', { name: 'Possible names and terms to review' });
+  const alexSuggestion = panel.getByRole('listitem', { name: 'Suggested term Alex Demo' });
+  await expect(alexSuggestion).toBeVisible();
+  await alexSuggestion.getByRole('button', { name: 'Dismiss Alex Demo' }).click();
+
+  await expect(alexSuggestion).toBeHidden();
+  await expect(page.getByLabel('Sanitized output with placeholders')).toContainText('Alex Demo');
+  await expect(page.evaluate(() => localStorage.length)).resolves.toBe(0);
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Load sample' }).click();
+  await page.getByRole('button', { name: 'Scan locally' }).click();
+  await expect(
+    page
+      .getByRole('region', { name: 'Possible names and terms to review' })
+      .getByRole('listitem', { name: 'Suggested term Alex Demo' }),
+  ).toBeVisible();
+});
+
 test('toggling a finding restores the original value in the preview', async ({ page }) => {
   await loadDemoAndScan(page);
   const preview = page.getByRole('region', { name: /Redacted preview/i });

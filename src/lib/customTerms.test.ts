@@ -174,6 +174,7 @@ describe('session clearing', () => {
       termsMatchInsideWords: false,
       termsFormat: { id: 'indexed', customTemplate: '[{TYPE}_{INDEX}]' },
       termsLabel: 'CUSTOM_TERM',
+      dismissedCandidateKeys: [],
       findings: [],
       hasScanned: false,
     });

@@ -17,6 +17,8 @@ export interface SessionState {
   termsFormat: RedactionChoice;
   /** Session-only placeholder label for custom terms. */
   termsLabel: string;
+  /** Session-only candidate suggestions the user chose not to review again. */
+  dismissedCandidateKeys: string[];
   findings: Finding[];
   hasScanned: boolean;
 }
@@ -31,6 +33,7 @@ export function createEmptySession(): SessionState {
     termsMatchInsideWords: false,
     termsFormat: { id: 'indexed', customTemplate: DEFAULT_TEMPLATE },
     termsLabel: DEFAULT_CUSTOM_TERM_LABEL,
+    dismissedCandidateKeys: [],
     findings: [],
     hasScanned: false,
   };

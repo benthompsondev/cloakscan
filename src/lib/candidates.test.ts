@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findCloakCandidates } from './candidates';
+import { candidateKey, findCloakCandidates } from './candidates';
 import type { Finding } from './types';
 
 function coveredFinding(text: string, value: string): Finding {
@@ -108,6 +108,34 @@ describe('findCloakCandidates', () => {
     expect(findCloakCandidates(text, [])).toHaveLength(15);
   });
 
+  it('removes dismissed terms and lets the next ranked suggestion into the list', () => {
+    const text = [
+      'Alpha Birch',
+      'Bravo Cedar',
+      'Charlie Dogwood',
+      'Delta Elm',
+      'Echo Fir',
+      'Foxtrot Hazel',
+      'Golf Ironwood',
+      'Hotel Juniper',
+      'India Kapok',
+      'Juliet Linden',
+      'Kilo Maple',
+      'Lima Nutmeg',
+      'Mike Olive',
+      'November Pine',
+      'Oscar Redwood',
+      'Papa Sycamore',
+    ].join('\n');
+    const initial = findCloakCandidates(text, []);
+    const dismissed = findCloakCandidates(text, [], [candidateKey('ALPHA BIRCH')]);
+
+    expect(initial.map((candidate) => candidate.text)).not.toContain('Papa Sycamore');
+    expect(dismissed).toHaveLength(15);
+    expect(dismissed.map((candidate) => candidate.text)).not.toContain('Alpha Birch');
+    expect(dismissed.map((candidate) => candidate.text)).toContain('Papa Sycamore');
+  });
+
   it('keeps real names ahead of repeated PowerShell and logging noise', () => {
     const noisyTerms = [
       'Green',
@@ -167,5 +195,22 @@ describe('findCloakCandidates', () => {
     ]) {
       expect(candidateTexts).not.toContain(junk);
     }
+  });
+
+  it('excludes common privacy and infrastructure labels from the review panel', () => {
+    const text = [
+      'Cloak List',
+      'NIC',
+      'DOB',
+      'SIN',
+      'AWS',
+      'Project Nightjar',
+      'Contoso Health',
+    ].join('\n');
+
+    expect(findCloakCandidates(text, []).map((candidate) => candidate.text)).toEqual([
+      'Project Nightjar',
+      'Contoso Health',
+    ]);
   });
 });

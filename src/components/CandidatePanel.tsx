@@ -4,9 +4,14 @@ import type { CloakCandidate } from '../lib/candidates';
 interface CandidatePanelProps {
   candidates: CloakCandidate[];
   onHideCandidate: (term: string) => void;
+  onDismissCandidate: (term: string) => void;
 }
 
-export function CandidatePanel({ candidates, onHideCandidate }: CandidatePanelProps) {
+export function CandidatePanel({
+  candidates,
+  onHideCandidate,
+  onDismissCandidate,
+}: CandidatePanelProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -33,7 +38,7 @@ export function CandidatePanel({ candidates, onHideCandidate }: CandidatePanelPr
           <p className="muted candidate-note">
             These are guesses, not detections — nothing here is redacted until you add it. Built-in
             rules can't safely detect arbitrary names or company terms, so review these and hide the
-            ones that matter.
+            ones that matter. Dismiss removes a suggestion for this session only.
           </p>
           <ul className="candidate-list">
             {candidates.map((candidate) => (
@@ -59,6 +64,15 @@ export function CandidatePanel({ candidates, onHideCandidate }: CandidatePanelPr
                   <a className="btn btn-ghost btn-mini" href="#/settings/profiles">
                     Add to a Cloak List
                   </a>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-mini"
+                    aria-label={`Dismiss ${candidate.text}`}
+                    title="Dismiss for this session"
+                    onClick={() => onDismissCandidate(candidate.text)}
+                  >
+                    Dismiss
+                  </button>
                 </span>
               </li>
             ))}

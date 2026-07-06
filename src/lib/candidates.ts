@@ -110,6 +110,8 @@ const GENERIC_TITLE_WORDS = new Set(
     'Output',
     'Input',
     'Date',
+    'Cloak',
+    'List',
   ].map((value) => value.toLocaleLowerCase()),
 );
 
@@ -119,7 +121,8 @@ const TECH_ACRONYMS = new Set([
   'SSH', 'TCP', 'UDP', 'EXE', 'DLL', 'MSI', 'PDF', 'ZIP', 'LOG', 'TXT', 'RAM', 'CPU', 'GPU',
   'USB', 'LAN', 'WAN', 'VPN', 'UTC', 'GMT', 'ISO', 'UI', 'UX', 'QA', 'CI', 'CD', 'PS', 'WMI',
   'GPO', 'SID', 'UPN', 'ACL', 'NTFS', 'SMTP', 'TLS', 'SSL', 'JWT', 'MFA', 'SSO', 'REST', 'KB',
-  'MB', 'GB', 'TB', 'AM', 'PM', 'OK', 'ERR', 'WARN', 'INFO', 'DEBUG', 'NIS', 'BT',
+  'MB', 'GB', 'TB', 'AM', 'PM', 'OK', 'ERR', 'WARN', 'INFO', 'DEBUG', 'NIS', 'BT', 'NIC',
+  'DOB', 'SIN', 'AWS',
 ]);
 
 const DATE_FORMAT_TOKENS = new Set(['YYYY', 'YY', 'MM', 'MMM', 'MMMM', 'DD', 'HH', 'SS', 'MS']);
@@ -150,7 +153,7 @@ function blocked(
   );
 }
 
-function normalizeCandidate(value: string): string {
+export function candidateKey(value: string): string {
   return value.normalize('NFC').replace(/[ \t\u00a0]+/gu, ' ').toLocaleLowerCase();
 }
 
@@ -284,9 +287,11 @@ function acronymOccurrences(text: string): CandidateOccurrence[] {
 export function findCloakCandidates(
   text: string,
   findings: readonly Finding[],
+  dismissedCandidateKeys: readonly string[] = [],
 ): CloakCandidate[] {
   if (text.length === 0) return [];
 
+  const dismissed = new Set(dismissedCandidateKeys.map(candidateKey));
   const protectedRanges = findPowerShellRegexRanges(text);
   const eligible = [...titleCaseOccurrences(text), ...acronymOccurrences(text)].filter(
     (occurrence) => !blocked(occurrence, findings, protectedRanges),
@@ -303,7 +308,7 @@ export function findCloakCandidates(
   >();
 
   for (const occurrence of eligible) {
-    const key = normalizeCandidate(occurrence.text);
+    const key = candidateKey(occurrence.text);
     const existing = grouped.get(key);
     if (existing) {
       existing.count += 1;
@@ -324,6 +329,7 @@ export function findCloakCandidates(
 
   return [...grouped.values()]
     .filter((candidate) => candidate.qualifiesImmediately || candidate.count >= 2)
+    .filter((candidate) => !dismissed.has(candidateKey(candidate.text)))
     .sort(
       (a, b) =>
         Number(b.isMultiWordTitle) - Number(a.isMultiWordTitle) ||

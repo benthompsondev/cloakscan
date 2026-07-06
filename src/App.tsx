@@ -28,7 +28,7 @@ import {
   type CustomPack,
 } from './lib/customPacks';
 import { templateFor, type RedactionChoice } from './lib/redaction';
-import { findCloakCandidates } from './lib/candidates';
+import { candidateKey, findCloakCandidates } from './lib/candidates';
 import { useHashRoute } from './hooks/useHashRoute';
 import { Header } from './components/Header';
 import { DemoBanner } from './components/DemoBanner';
@@ -322,8 +322,19 @@ export default function App() {
   const groups = useMemo(() => groupFindings(session.findings), [session.findings]);
   const candidates = useMemo(
     () =>
-      session.hasScanned ? findCloakCandidates(session.sourceText, session.findings) : [],
-    [session.findings, session.hasScanned, session.sourceText],
+      session.hasScanned
+        ? findCloakCandidates(
+            session.sourceText,
+            session.findings,
+            session.dismissedCandidateKeys,
+          )
+        : [],
+    [
+      session.dismissedCandidateKeys,
+      session.findings,
+      session.hasScanned,
+      session.sourceText,
+    ],
   );
 
   const setSource = (sourceText: string) =>
@@ -410,6 +421,17 @@ export default function App() {
     setScanMeta({ startedAt, durationMs: performance.now() - t0 });
   };
 
+  const dismissCandidate = (term: string) =>
+    setSession((current) => {
+      const key = candidateKey(term);
+      return current.dismissedCandidateKeys.includes(key)
+        ? current
+        : {
+            ...current,
+            dismissedCandidateKeys: [...current.dismissedCandidateKeys, key],
+          };
+    });
+
   const onToggleGroup = (ids: readonly string[], enabled: boolean) =>
     setSession((s) => ({ ...s, findings: setFindingsEnabled(s.findings, ids, enabled) }));
 
@@ -464,6 +486,7 @@ export default function App() {
             onScan={scan}
             onToggleGroup={onToggleGroup}
             onHideCandidate={hideCandidate}
+            onDismissCandidate={dismissCandidate}
             onSelectProfile={onSelectProfile}
             onClear={clearAll}
             onNotice={showNotice}

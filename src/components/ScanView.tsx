@@ -29,6 +29,7 @@ interface ScanViewProps {
   onScan: () => void;
   onToggleGroup: (ids: readonly string[], enabled: boolean) => void;
   onHideCandidate: (term: string) => void;
+  onDismissCandidate: (term: string) => void;
   onSelectProfile: (id: string) => void;
   onClear: () => void;
   onNotice: (notice: Notice) => void;
@@ -49,6 +50,7 @@ export function ScanView({
   onScan,
   onToggleGroup,
   onHideCandidate,
+  onDismissCandidate,
   onSelectProfile,
   onClear,
   onNotice,
@@ -187,7 +189,11 @@ export function ScanView({
             />
           </div>
           {candidates.length > 0 && (
-            <CandidatePanel candidates={candidates} onHideCandidate={onHideCandidate} />
+            <CandidatePanel
+              candidates={candidates}
+              onHideCandidate={onHideCandidate}
+              onDismissCandidate={onDismissCandidate}
+            />
           )}
         </>
       )}
