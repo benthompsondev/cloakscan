@@ -18,8 +18,7 @@
         "height": 860,
         "minWidth": 1024,
         "minHeight": 680,
-        "center": true,
-        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-background-networking --disable-component-update --disable-domain-reliability --no-pings"
+        "center": true
       }
     ],
     "security": {
@@ -29,7 +28,6 @@
   "bundle": {
     "active": true,
     "createUpdaterArtifacts": true,
-    "targets": ["nsis"],
     "category": "Utility",
     "publisher": "CloakGuard Project",
     "homepage": "https://github.com/benthompsondev/cloakguard",
@@ -39,15 +37,7 @@
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.ico"
-    ],
-    "windows": {
-      "webviewInstallMode": {
-        "type": "offlineInstaller"
-      },
-      "nsis": {
-        "installMode": "currentUser"
-      }
-    }
+    ]
   },
   "plugins": {
     "updater": {

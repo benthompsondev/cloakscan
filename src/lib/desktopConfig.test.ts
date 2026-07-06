@@ -8,51 +8,149 @@ import { APP_VERSION } from './version';
  * Desktop privacy invariants. These read the real src-tauri configuration so
  * a loosened surface (a new permission, a global Tauri object, a changed
  * install mode) fails the normal unit suite, not just a manual review.
+ *
+ * The configuration is split: tauri.conf.json holds the shared,
+ * platform-neutral settings, and tauri.windows.conf.json /
+ * tauri.linux.conf.json are per-platform overlays that Tauri merges on top
+ * at build time. The merge deep-merges objects and REPLACES arrays, so the
+ * tests below both check each file and check the merged per-platform result.
  */
 
 const root = join(__dirname, '..', '..');
-const conf = JSON.parse(readFileSync(join(root, 'src-tauri', 'tauri.conf.json'), 'utf8'));
-const capability = JSON.parse(
-  readFileSync(join(root, 'src-tauri', 'capabilities', 'main.json'), 'utf8'),
-);
-const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
-describe('tauri.conf.json privacy surface', () => {
+function readJson(...segments: string[]): Record<string, unknown> {
+  return JSON.parse(readFileSync(join(root, ...segments), 'utf8'));
+}
+
+/** Mirror Tauri's platform-config merge: objects deep-merge, arrays replace. */
+function mergeConfig(base: unknown, overlay: unknown): unknown {
+  if (
+    typeof base !== 'object' ||
+    base === null ||
+    Array.isArray(base) ||
+    typeof overlay !== 'object' ||
+    overlay === null ||
+    Array.isArray(overlay)
+  ) {
+    return overlay === undefined ? base : overlay;
+  }
+  const result: Record<string, unknown> = { ...(base as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(overlay as Record<string, unknown>)) {
+    result[key] = key in result ? mergeConfig(result[key], value) : value;
+  }
+  return result;
+}
+
+const shared = readJson('src-tauri', 'tauri.conf.json');
+const windowsOverlay = readJson('src-tauri', 'tauri.windows.conf.json');
+const linuxOverlay = readJson('src-tauri', 'tauri.linux.conf.json');
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const windowsConf = mergeConfig(shared, windowsOverlay) as any;
+const linuxConf = mergeConfig(shared, linuxOverlay) as any;
+const sharedConf = shared as any;
+const windowsOnly = windowsOverlay as any;
+const linuxOnly = linuxOverlay as any;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+const capability = readJson('src-tauri', 'capabilities', 'main.json');
+const pkg = readJson('package.json');
+
+describe('shared tauri.conf.json privacy surface', () => {
   it('does not expose a global Tauri object to the page', () => {
-    expect(conf.app.withGlobalTauri).toBe(false);
+    expect(sharedConf.app.withGlobalTauri).toBe(false);
   });
 
   it('keeps versions aligned across package.json, tauri.conf.json, and APP_VERSION', () => {
-    expect(conf.version).toBe(pkg.version);
+    expect(sharedConf.version).toBe(pkg.version);
     expect(APP_VERSION).toBe(pkg.version);
   });
 
-  it('ships the per-user offline NSIS installer only', () => {
-    expect(conf.bundle.targets).toEqual(['nsis']);
-    expect(conf.bundle.windows.webviewInstallMode.type).toBe('offlineInstaller');
-    expect(conf.bundle.windows.nsis.installMode).toBe('currentUser');
-  });
-
   it('never injects a replacement CSP over the built one', () => {
-    expect(conf.app.security.csp).toBeNull();
+    expect(sharedConf.app.security.csp).toBeNull();
   });
 
   it('keeps the stable identifier and product name', () => {
-    expect(conf.identifier).toBe('dev.benthompson.cloakguard');
-    expect(conf.productName).toBe('CloakGuard');
+    expect(sharedConf.identifier).toBe('dev.benthompson.cloakguard');
+    expect(sharedConf.productName).toBe('CloakGuard');
   });
 
   it('uses the public project identity in installer metadata', () => {
-    expect(conf.bundle.publisher).toBe('CloakGuard Project');
-    expect(conf.bundle.homepage).toBe('https://github.com/benthompsondev/cloakguard');
+    expect(sharedConf.bundle.publisher).toBe('CloakGuard Project');
+    expect(sharedConf.bundle.homepage).toBe('https://github.com/benthompsondev/cloakguard');
   });
 
   it('creates signed updater artifacts against the GitHub release manifest', () => {
-    expect(conf.bundle.createUpdaterArtifacts).toBe(true);
-    expect(conf.plugins.updater.pubkey).toMatch(/^[A-Za-z0-9+/]+=*$/);
-    expect(conf.plugins.updater.endpoints).toEqual([
+    expect(sharedConf.bundle.createUpdaterArtifacts).toBe(true);
+    expect(sharedConf.plugins.updater.pubkey).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    expect(sharedConf.plugins.updater.endpoints).toEqual([
       'https://github.com/benthompsondev/cloakguard/releases/latest/download/latest.json',
     ]);
+  });
+
+  it('stays platform-neutral: bundle targets and platform blocks live in overlays', () => {
+    expect(sharedConf.bundle.targets).toBeUndefined();
+    expect(sharedConf.bundle.windows).toBeUndefined();
+    expect(sharedConf.bundle.linux).toBeUndefined();
+    expect(sharedConf.app.windows[0].additionalBrowserArgs).toBeUndefined();
+  });
+});
+
+describe('platform overlays', () => {
+  it('do not touch security, updater, identity, or capability settings', () => {
+    for (const overlay of [windowsOnly, linuxOnly]) {
+      expect(overlay.app?.security).toBeUndefined();
+      expect(overlay.plugins).toBeUndefined();
+      expect(overlay.identifier).toBeUndefined();
+      expect(overlay.productName).toBeUndefined();
+      expect(overlay.version).toBeUndefined();
+      expect(overlay.app?.withGlobalTauri).toBeUndefined();
+      expect(overlay.bundle?.createUpdaterArtifacts).toBeUndefined();
+    }
+  });
+
+  it('Windows ships the per-user offline NSIS installer only', () => {
+    expect(windowsConf.bundle.targets).toEqual(['nsis']);
+    expect(windowsConf.bundle.windows.webviewInstallMode.type).toBe('offlineInstaller');
+    expect(windowsConf.bundle.windows.nsis.installMode).toBe('currentUser');
+  });
+
+  it('Windows keeps the WebView2 background-networking flags on a complete window entry', () => {
+    // Arrays are replaced (not merged) by the platform overlay, so the
+    // Windows window entry must be complete on its own.
+    expect(windowsConf.app.windows).toHaveLength(1);
+    const win = windowsConf.app.windows[0];
+    expect(win.title).toBe('CloakGuard');
+    expect(win.width).toBe(1280);
+    expect(win.height).toBe(860);
+    expect(win.minWidth).toBe(1024);
+    expect(win.minHeight).toBe(680);
+    expect(win.center).toBe(true);
+    for (const flag of [
+      '--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection',
+      '--disable-background-networking',
+      '--disable-component-update',
+      '--disable-domain-reliability',
+      '--no-pings',
+    ]) {
+      expect(win.additionalBrowserArgs).toContain(flag);
+    }
+  });
+
+  it('Linux ships deb and AppImage for x86_64 with no Windows leftovers', () => {
+    expect(linuxConf.bundle.targets).toEqual(['deb', 'appimage']);
+    expect(linuxOnly.bundle.windows).toBeUndefined();
+    expect(linuxConf.app.windows[0].additionalBrowserArgs).toBeUndefined();
+  });
+
+  it('both merged platforms keep the privacy invariants', () => {
+    for (const conf of [windowsConf, linuxConf]) {
+      expect(conf.app.withGlobalTauri).toBe(false);
+      expect(conf.app.security.csp).toBeNull();
+      expect(conf.bundle.createUpdaterArtifacts).toBe(true);
+      expect(conf.identifier).toBe('dev.benthompson.cloakguard');
+      expect(conf.plugins.updater.endpoints).toEqual([
+        'https://github.com/benthompsondev/cloakguard/releases/latest/download/latest.json',
+      ]);
+    }
   });
 });
 
