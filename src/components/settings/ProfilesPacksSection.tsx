@@ -14,6 +14,7 @@ import {
   summarizeCloakListImport,
   type CustomPack,
 } from '../../lib/customPacks';
+import { parseCloakListFile, serializeCloakList } from '../../lib/cloakListFile';
 import { decodeText } from '../../lib/decodeText';
 import { downloadTextFile } from '../../lib/download';
 import type { SettingsProps } from './SettingsView';
@@ -24,6 +25,8 @@ import { ProfileEditor } from './ProfileEditor';
 export function ProfilesPacksSection(props: SettingsProps) {
   const { workspace, activeConfig } = props;
   const importListInput = useRef<HTMLInputElement>(null);
+  const importJsonInput = useRef<HTMLInputElement>(null);
+  const [confirmExportId, setConfirmExportId] = useState<string | null>(null);
   const [editingPack, setEditingPack] = useState<CustomPack | 'new' | null>(null);
   const [editingList, setEditingList] = useState<CustomPack | 'new' | null>(null);
   const [newListFromFile, setNewListFromFile] = useState<{ name: string; termsText: string } | null>(null);
@@ -61,6 +64,47 @@ export function ProfilesPacksSection(props: SettingsProps) {
           ? 'Cloak List export cancelled.'
           : `Exported "${list.name}" as a .txt list.`,
     });
+  };
+
+  const exportListJson = async (list: CustomPack) => {
+    setConfirmExportId(null);
+    const result = await downloadTextFile(
+      `${filenameStem(list.name)}-cloak-list.json`,
+      serializeCloakList(list),
+    );
+    props.onNotice({
+      kind: result === 'cancelled' ? 'err' : 'ok',
+      text:
+        result === 'cancelled'
+          ? 'Cloak List export cancelled.'
+          : `Exported "${list.name}" with its mappings as JSON.`,
+    });
+  };
+
+  const importListJsonFile = async (file: File) => {
+    if (file.size > MAX_CLOAK_LIST_IMPORT_BYTES) {
+      props.onNotice({ kind: 'err', text: 'That file is too large. Import a .json file under 256 KB.' });
+      return;
+    }
+    try {
+      const decoded = decodeText(new Uint8Array(await file.arrayBuffer()));
+      if (decoded === null) {
+        props.onNotice({ kind: 'err', text: 'Could not decode that file.' });
+        return;
+      }
+      const result = parseCloakListFile(decoded);
+      if (!result.ok) {
+        props.onNotice({ kind: 'err', text: result.error });
+        return;
+      }
+      props.onSavePack(result.pack);
+      props.onNotice({
+        kind: 'ok',
+        text: `Imported Cloak List "${result.pack.name}" — session-only until you opt into saving its terms.`,
+      });
+    } catch {
+      props.onNotice({ kind: 'err', text: 'Could not read that file.' });
+    }
   };
 
   const importListFile = async (file: File) => {
@@ -315,8 +359,11 @@ export function ProfilesPacksSection(props: SettingsProps) {
               </div>
               <p className="muted pack-card-desc">{list.description || 'Exact terms to cloak.'}</p>
               <p className="muted pack-card-meta">
-                {list.terms.values.length} term{list.terms.values.length === 1 ? '' : 's'} ·{' '}
-                {list.terms.matchInsideWords ? 'matches inside words' : 'exact words/phrases'}
+                {list.terms.values.length} term{list.terms.values.length === 1 ? '' : 's'}
+                {(list.terms.mappings?.length ?? 0) > 0
+                  ? ` · ${list.terms.mappings?.length} mapping${list.terms.mappings?.length === 1 ? '' : 's'}`
+                  : ''}{' '}
+                · {list.terms.matchInsideWords ? 'matches inside words' : 'exact words/phrases'}
                 {list.terms.caseSensitive ? ' · case-sensitive' : ''}
               </p>
               <div className="pack-card-actions">
@@ -339,6 +386,36 @@ export function ProfilesPacksSection(props: SettingsProps) {
                 <button type="button" className="btn btn-mini" onClick={() => void exportList(list)}>
                   Export .txt
                 </button>
+                {confirmExportId === list.id ? (
+                  <>
+                    <span className="muted export-warning">
+                      This file will contain your organization-specific terms — treat it as
+                      sensitive.
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-mini"
+                      onClick={() => void exportListJson(list)}
+                    >
+                      Export anyway
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-mini"
+                      onClick={() => setConfirmExportId(null)}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-mini"
+                    onClick={() => setConfirmExportId(list.id)}
+                  >
+                    Export JSON
+                  </button>
+                )}
                 {confirmDeleteId === list.id ? (
                   <>
                     <button
@@ -396,9 +473,30 @@ export function ProfilesPacksSection(props: SettingsProps) {
               event.target.value = '';
             }}
           />
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={workspace.customPacks.length >= MAX_CUSTOM_PACKS}
+            onClick={() => importJsonInput.current?.click()}
+          >
+            Import Cloak List (.json)
+          </button>
+          <input
+            ref={importJsonInput}
+            type="file"
+            accept=".json,application/json"
+            className="visually-hidden"
+            aria-label="Import Cloak List from JSON"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void importListJsonFile(file);
+              event.target.value = '';
+            }}
+          />
           <p className="muted">
-            Name it, add exact terms, choose matching options, and (optionally) save the term
-            values on this device.
+            Name it, add exact terms and mappings, choose matching options, and (optionally)
+            save the term values on this device. JSON export carries mappings; .txt carries
+            terms only.
           </p>
         </div>
 

@@ -201,6 +201,7 @@ describe('session clearing', () => {
       termsFormat: { id: 'indexed', customTemplate: '[{TYPE}_{INDEX}]' },
       termsLabel: 'CUSTOM_TERM',
       dismissedCandidateKeys: [],
+      outputMode: 'safe-share',
       findings: [],
       hasScanned: false,
     });

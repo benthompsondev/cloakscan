@@ -107,15 +107,20 @@ export function scanText(text: string, options: ScanOptions = {}): Finding[] {
       id: `${c.detector.id}-${index}-${c.start}`,
       detectorId: c.detector.id,
       name: c.detector.name,
-      category: c.detector.category,
-      severity: c.detector.severity,
+      // Cloak List mapping entries carry their own category/severity.
+      category: c.category ?? c.detector.category,
+      severity: c.severity ?? c.detector.severity,
       confidence: c.confidence,
       explanation: c.detector.explanation,
       start: c.start,
       end: c.end,
       value: c.value,
       placeholder,
-      enabled: true,
+      ...(c.replacement !== undefined ? { replacement: c.replacement } : {}),
+      ...(c.detector.reviewLead ? { reviewLead: true } : {}),
+      // Review leads start disabled: they flag things worth checking, and
+      // silently rewriting them (e.g. SamAccountName) would corrupt code.
+      enabled: !c.detector.reviewLead,
     };
   });
 }

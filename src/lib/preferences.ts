@@ -22,6 +22,11 @@ import {
 } from './customPacks';
 import { MAX_PROFILES } from './profiles';
 import {
+  MAX_MAPPINGS_PER_LIST,
+  cleanMappingEntry,
+  type CloakMappingEntry,
+} from './cloakMappings';
+import {
   validateTemplate,
   DEFAULT_CUSTOM_TERM_LABEL,
   DEFAULT_TEMPLATE,
@@ -201,6 +206,14 @@ function cleanCustomPack(raw: unknown): CustomPack | null {
         .filter((v) => v.length >= 2 && v.length <= MAX_TERM_LENGTH)
         .slice(0, MAX_TERMS_PER_PACK);
     }
+    // Mapping TERMS are as sensitive as plain values: same opt-in gate.
+    if (terms.saveTerms && Array.isArray(t.mappings)) {
+      const mappings = t.mappings
+        .map((m, index) => cleanMappingEntry(m, `stored-map-${index}`))
+        .filter((m): m is CloakMappingEntry => m !== null)
+        .slice(0, MAX_MAPPINGS_PER_LIST);
+      if (mappings.length > 0) terms.mappings = mappings;
+    }
   }
   return { id, name, description, detectorIds, rules, terms, enabled: data.enabled !== false };
 }
@@ -360,6 +373,20 @@ export function savePreferencesV2(prefs: PreferencesV2): void {
         termLabel: p.terms.termLabel,
         // Term VALUES only persist behind the pack's separate explicit opt-in.
         values: p.terms.saveTerms ? p.terms.values.slice(0, MAX_TERMS_PER_PACK) : [],
+        // Mapping terms carry the same sensitivity: same opt-in, same gate.
+        ...(p.terms.saveTerms && p.terms.mappings && p.terms.mappings.length > 0
+          ? {
+              mappings: p.terms.mappings.slice(0, MAX_MAPPINGS_PER_LIST).map((m) => ({
+                id: m.id,
+                term: m.term,
+                replacement: m.replacement,
+                categoryLabel: m.categoryLabel,
+                severity: m.severity,
+                matchMode: m.matchMode,
+                codeSafe: m.codeSafe,
+              })),
+            }
+          : {}),
       },
       enabled: p.enabled,
     })),

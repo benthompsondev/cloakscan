@@ -1,6 +1,15 @@
 /** Shared types for the CloakScan scan engine. */
 
-export type Category = 'secrets' | 'infrastructure' | 'personal' | 'paths';
+export type Category =
+  | 'secrets'
+  | 'infrastructure'
+  | 'personal'
+  | 'paths'
+  | 'organization'
+  | 'code'
+  | 'workflow'
+  | 'directory'
+  | 'messaging';
 
 export type Severity = 'high' | 'medium' | 'low';
 
@@ -15,6 +24,15 @@ export interface RawMatch {
   /** The exact matched value (kept in memory only, never logged). */
   value: string;
   confidence: Confidence;
+  /**
+   * Optional code-safe replacement (Portfolio-code mode). When present, the
+   * finding can be spliced as a valid identifier instead of a placeholder.
+   */
+  replacement?: string;
+  /** Optional per-match category override (Cloak List mapping entries). */
+  category?: Category;
+  /** Optional per-match severity override (Cloak List mapping entries). */
+  severity?: Severity;
 }
 
 /** A single detection rule. Each detector stays small and independently testable. */
@@ -48,6 +66,12 @@ export interface Detector {
    * policy pack (or an explicit override) turns them on.
    */
   packOnly?: boolean;
+  /**
+   * Review leads point at organization/workflow fingerprints worth a look,
+   * not confirmed sensitive values. Their findings start DISABLED so they
+   * never silently rewrite output (or corrupt code); the user opts in.
+   */
+  reviewLead?: boolean;
   detect(text: string): RawMatch[];
   /**
    * Optional value normalizer used ONLY for placeholder reuse, e.g. private
@@ -71,6 +95,13 @@ export interface Finding {
   value: string;
   /** Assigned placeholder, e.g. [EMAIL_1]. Identical values share a placeholder. */
   placeholder: string;
+  /**
+   * Code-safe identifier replacement, when one applies. Portfolio-code mode
+   * splices this instead of the placeholder; Safe-share mode ignores it.
+   */
+  replacement?: string;
+  /** True when this finding is a review lead (starts disabled, opt-in). */
+  reviewLead?: boolean;
   /** Whether this finding will be replaced in the cleaned output. */
   enabled: boolean;
 }

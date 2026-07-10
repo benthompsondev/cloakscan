@@ -210,7 +210,9 @@ describe('tenant domains', () => {
   it('redacts the whole address when the tenant domain is in an email', () => {
     const text = 'RemoteRoutingAddress ademo@contoso-demo.mail.onmicrosoft.com set';
     const findings = scanText(text);
-    expect(findings.map((f) => f.detectorId)).toEqual(['email']);
+    // RemoteRoutingAddress itself is now an Exchange review lead (disabled);
+    // the redacting finding must still be exactly the full email.
+    expect(findings.filter((f) => !f.reviewLead).map((f) => f.detectorId)).toEqual(['email']);
     expect(buildCleanText(text, findings)).toBe('RemoteRoutingAddress [EMAIL_1] set');
   });
 });

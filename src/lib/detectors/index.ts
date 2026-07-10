@@ -37,6 +37,15 @@ import {
   itinDetector,
 } from './usIdentifiers';
 import { passportDetector } from './passport';
+import {
+  adGroupNameDetector,
+  authorInitialsDetector,
+  credentialWorkflowDetector,
+  csvIdentityHeaderDetector,
+  directoryAttributeDetector,
+  exchangeWorkflowDetector,
+  workflowArtifactDetector,
+} from './reviewLeads';
 
 /**
  * The full detection registry, including strict-only rules. Which rules
@@ -67,6 +76,7 @@ export const detectors: Detector[] = [
   ipv4Detector,
   portDetector,
   internalHostnameDetector,
+  adGroupNameDetector,
   ticketIdDetector,
   usernameDetector,
   personNameDetector,
@@ -85,4 +95,11 @@ export const detectors: Detector[] = [
   deaNumberDetector,
   caPostalCodeDetector,
   usZipDetector,
+  // Review leads: findings start disabled; they point, they never rewrite.
+  workflowArtifactDetector,
+  directoryAttributeDetector,
+  exchangeWorkflowDetector,
+  credentialWorkflowDetector,
+  authorInitialsDetector,
+  csvIdentityHeaderDetector,
 ];

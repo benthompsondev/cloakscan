@@ -1,5 +1,6 @@
 import type { Finding } from './types';
 import { DEFAULT_CUSTOM_TERM_LABEL, DEFAULT_TEMPLATE, type RedactionChoice } from './redaction';
+import { DEFAULT_OUTPUT_MODE, type OutputMode } from './sanitize';
 
 /**
  * All user content lives in this in-memory shape and nowhere else.
@@ -19,6 +20,8 @@ export interface SessionState {
   termsLabel: string;
   /** Session-only candidate suggestions the user chose not to review again. */
   dismissedCandidateKeys: string[];
+  /** Safe-share (placeholders) or Portfolio-code (identifier replacements). */
+  outputMode: OutputMode;
   findings: Finding[];
   hasScanned: boolean;
 }
@@ -34,6 +37,7 @@ export function createEmptySession(): SessionState {
     termsFormat: { id: 'indexed', customTemplate: DEFAULT_TEMPLATE },
     termsLabel: DEFAULT_CUSTOM_TERM_LABEL,
     dismissedCandidateKeys: [],
+    outputMode: DEFAULT_OUTPUT_MODE,
     findings: [],
     hasScanned: false,
   };

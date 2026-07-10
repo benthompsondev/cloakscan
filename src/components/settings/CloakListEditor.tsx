@@ -9,6 +9,14 @@ import {
   type CustomPack,
 } from '../../lib/customPacks';
 import { analyzePrivateTerms, createPrivateTermsDetector } from '../../lib/customTerms';
+import {
+  CLOAK_ENTRY_CATEGORIES,
+  MATCH_MODES,
+  MAX_MAPPINGS_PER_LIST,
+  emptyMappingEntry,
+  validateMappingEntry,
+  type CloakMappingEntry,
+} from '../../lib/cloakMappings';
 import { decodeText } from '../../lib/decodeText';
 import { scanText } from '../../lib/scan';
 import { buildCleanText } from '../../lib/sanitize';
@@ -76,10 +84,29 @@ export function CloakListEditor({
 
   const nameError = draft.name.length > 0 ? validateName(draft.name) : null;
   const analysis = analyzePrivateTerms(termsText, draft.terms.caseSensitive);
-  // A NEW list must contain at least one valid term; an existing list may be
-  // edited or cleared (unsaved term values legitimately vanish on reload).
-  const saveBlocker = cloakListSaveBlocker(list === null, analysis.terms.length);
-  const canSave = draft.name.trim().length > 0 && nameError === null && saveBlocker === null;
+  const mappings = draft.terms.mappings ?? [];
+  // Rows the user started typing must be valid before saving; untouched
+  // blank rows are simply dropped.
+  const startedMappings = mappings.filter((m) => m.term.trim() !== '' || m.replacement !== '');
+  const mappingErrors = startedMappings
+    .map((m) => ({ id: m.id, error: validateMappingEntry(m) }))
+    .filter((m) => m.error !== null);
+  // A NEW list must contain at least one valid term or mapping; an existing
+  // list may be edited or cleared (unsaved values legitimately vanish on reload).
+  const saveBlocker = cloakListSaveBlocker(
+    list === null,
+    analysis.terms.length + (startedMappings.length - mappingErrors.length),
+  );
+  const canSave =
+    draft.name.trim().length > 0 &&
+    nameError === null &&
+    saveBlocker === null &&
+    mappingErrors.length === 0;
+
+  const setMappings = (next: CloakMappingEntry[]) =>
+    setDraft({ ...draft, terms: { ...draft.terms, mappings: next } });
+  const updateMapping = (id: string, patch: Partial<CloakMappingEntry>) =>
+    setMappings(mappings.map((m) => (m.id === id ? { ...m, ...patch } : m)));
 
   const exampleAfter = buildCleanText(
     QUICK_CLOAK_EXAMPLE_BEFORE,
@@ -108,7 +135,11 @@ export function CloakListEditor({
     onSave({
       ...draft,
       name: draft.name.trim(),
-      terms: { ...draft.terms, values: analysis.terms },
+      terms: {
+        ...draft.terms,
+        values: analysis.terms,
+        mappings: startedMappings.filter((m) => validateMappingEntry(m) === null),
+      },
     });
 
   const importTermsFile = async (file: File) => {
@@ -230,6 +261,117 @@ export function CloakListEditor({
         />
         <TermsFeedback analysis={analysis} />
 
+        <div className="section-heading-row">
+          <h3>Mappings ({startedMappings.length})</h3>
+          <button
+            type="button"
+            className="btn btn-mini"
+            disabled={mappings.length >= MAX_MAPPINGS_PER_LIST}
+            onClick={() => setMappings([...mappings, emptyMappingEntry(generateId('map'))])}
+          >
+            Add mapping
+          </button>
+        </div>
+        <p className="muted">
+          A mapping cloaks a term like the list above, plus an optional generic replacement for
+          <strong> Portfolio-code</strong> mode: with code-safe on, a term found inside a
+          variable, function, property, or command name is swapped for the replacement (casing
+          adapted) instead of a bracket placeholder. Inside quoted strings and plain prose it
+          still becomes a placeholder.
+        </p>
+        {mappings.length > 0 && (
+          <ul className="mapping-rows" aria-label="Cloak List mappings">
+            {mappings.map((m) => {
+              const error =
+                m.term.trim() !== '' || m.replacement !== '' ? validateMappingEntry(m) : null;
+              return (
+                <li key={m.id} className="mapping-row">
+                  <input
+                    className="rule-search mapping-term"
+                    value={m.term}
+                    maxLength={120}
+                    placeholder="Term, e.g. Nirv"
+                    aria-label="Mapping term"
+                    spellCheck={false}
+                    onChange={(e) => updateMapping(m.id, { term: e.target.value })}
+                  />
+                  <span aria-hidden="true" className="muted">
+                    →
+                  </span>
+                  <input
+                    className="rule-search mapping-replacement"
+                    value={m.replacement}
+                    maxLength={60}
+                    placeholder="Replacement, e.g. SourceSystem"
+                    aria-label="Mapping replacement identifier"
+                    spellCheck={false}
+                    onChange={(e) => updateMapping(m.id, { replacement: e.target.value })}
+                  />
+                  <select
+                    className="profile-select mapping-select"
+                    value={m.categoryLabel}
+                    aria-label="Mapping category"
+                    onChange={(e) => updateMapping(m.id, { categoryLabel: e.target.value })}
+                  >
+                    {CLOAK_ENTRY_CATEGORIES.map((c) => (
+                      <option key={c.label} value={c.label}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="profile-select mapping-select"
+                    value={m.severity}
+                    aria-label="Mapping severity"
+                    onChange={(e) =>
+                      updateMapping(m.id, { severity: e.target.value as CloakMappingEntry['severity'] })
+                    }
+                  >
+                    <option value="high">high</option>
+                    <option value="medium">medium</option>
+                    <option value="low">low</option>
+                  </select>
+                  <select
+                    className="profile-select mapping-select"
+                    value={m.matchMode}
+                    aria-label="Mapping match behavior"
+                    onChange={(e) =>
+                      updateMapping(m.id, { matchMode: e.target.value as CloakMappingEntry['matchMode'] })
+                    }
+                  >
+                    {MATCH_MODES.map((mode) => (
+                      <option key={mode.id} value={mode.id}>
+                        {mode.name}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="terms-toggle-row mapping-codesafe" title="Allow the replacement inside code identifiers">
+                    <input
+                      type="checkbox"
+                      checked={m.codeSafe}
+                      onChange={(e) => updateMapping(m.id, { codeSafe: e.target.checked })}
+                    />
+                    code-safe
+                  </label>
+                  <button
+                    type="button"
+                    className="btn btn-mini"
+                    aria-label="Remove this mapping"
+                    onClick={() => setMappings(mappings.filter((x) => x.id !== m.id))}
+                  >
+                    Remove
+                  </button>
+                  {error && (
+                    <span className="template-error mapping-error" role="alert">
+                      {error}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
         <div className="terms-format-control">
           <h3>How these terms are cloaked</h3>
           <FormatPicker
@@ -320,8 +462,9 @@ export function CloakListEditor({
         </label>
         <p className="muted terms-save-warning">
           Saved terms are readable local data on this device and are not encrypted. Nothing is
-          uploaded. Term values persist only when preference storage AND this option are both on;
-          otherwise they vanish on reload. Clearing preferences deletes saved terms.
+          uploaded. Term values and mapping terms persist only when preference storage AND this
+          option are both on; otherwise they vanish on reload. Clearing preferences deletes
+          saved terms.
         </p>
       </div>
     </section>

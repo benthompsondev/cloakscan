@@ -33,8 +33,8 @@ if ($value -match '^[A-Z]{2,5}[0-9]{3,8}$') { "matched" }
 $ImportPath = "[UNC_PATH_1]"
 $newPassword = Generate-Password
 Set-ADAccountPassword -Identity $SamAccountName -NewPassword $newPassword
-Add-ADGroupMember -Identity "Folder Redirection" -Members $SamAccountName
-Add-ADGroupMember -Identity "Some Application Group" -Members $SamAccountName
+Add-ADGroupMember -Identity "[AD_GROUP_1]" -Members $SamAccountName
+Add-ADGroupMember -Identity "[AD_GROUP_2]" -Members $SamAccountName
 
 $ConnectionUri = "[INTERNAL_HOST_2]"
 $SearchBase = "[AD_DN_1]"

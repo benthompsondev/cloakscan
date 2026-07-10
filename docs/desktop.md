@@ -3,7 +3,7 @@
 > Looking for Linux? The `.deb` / AppImage guide is [docs/linux.md](linux.md).
 
 CloakScan ships to Windows users as **one setup executable**:
-`release/windows/CloakScan-Setup-1.2.0-x64.exe`. Download it, run it, and
+`release/windows/CloakScan-Setup-1.3.0-x64.exe`. Download it, run it, and
 launch CloakScan from the Start Menu. No Node, npm, Rust, source folders,
 manual dependencies, or internet access are needed — the installer even
 bundles the WebView2 runtime installer, so installation itself works offline

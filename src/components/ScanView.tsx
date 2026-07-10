@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import type { SessionState } from '../lib/session';
+import type { Finding } from '../lib/types';
 import type { FindingGroup } from '../lib/groups';
 import type { CloakCandidate } from '../lib/candidates';
+import type { CodeWarning } from '../lib/codeWarnings';
+import type { OutputMode } from '../lib/sanitize';
 import { analyzePrivateTerms } from '../lib/customTerms';
 import { isCloakList } from '../lib/customPacks';
 import { packById } from '../lib/packs';
@@ -18,7 +21,10 @@ interface ScanViewProps {
   session: SessionState;
   groups: FindingGroup[];
   candidates: CloakCandidate[];
+  /** Findings with the output mode already applied (portfolio replacements). */
+  effectiveFindings: Finding[];
   cleanText: string;
+  codeWarnings: CodeWarning[];
   scanMeta: ScanMeta | null;
   workspace: Workspace;
   activeConfig: ProfileConfig;
@@ -26,6 +32,7 @@ interface ScanViewProps {
   totalCount: number;
   onSource: (text: string) => void;
   onUpdateTerms: (patch: Partial<SessionState>) => void;
+  onSetOutputMode: (mode: OutputMode) => void;
   onScan: () => void;
   onNewScan: () => void;
   onToggleGroup: (ids: readonly string[], enabled: boolean) => void;
@@ -40,7 +47,9 @@ export function ScanView({
   session,
   groups,
   candidates,
+  effectiveFindings,
   cleanText,
+  codeWarnings,
   scanMeta,
   workspace,
   activeConfig,
@@ -48,6 +57,7 @@ export function ScanView({
   totalCount,
   onSource,
   onUpdateTerms,
+  onSetOutputMode,
   onScan,
   onNewScan,
   onToggleGroup,
@@ -125,6 +135,25 @@ export function ScanView({
             ))}
           </span>
         )}
+        <span className="toolbar-item mode-toggle" role="group" aria-label="Output mode">
+          <span className="muted">Output</span>
+          <button
+            type="button"
+            className={`btn btn-mini mode-btn ${session.outputMode === 'safe-share' ? 'is-active' : ''}`}
+            aria-pressed={session.outputMode === 'safe-share'}
+            onClick={() => onSetOutputMode('safe-share')}
+          >
+            Safe-share
+          </button>
+          <button
+            type="button"
+            className={`btn btn-mini mode-btn ${session.outputMode === 'portfolio-code' ? 'is-active' : ''}`}
+            aria-pressed={session.outputMode === 'portfolio-code'}
+            onClick={() => onSetOutputMode('portfolio-code')}
+          >
+            Portfolio-code
+          </button>
+        </span>
         <span className="toolbar-spacer" aria-hidden="true" />
         <button type="button" className="btn btn-ghost" onClick={() => setTermsOpen(true)}>
           Hide custom terms{termCount > 0 ? ` (${termCount})` : ''}
@@ -133,6 +162,12 @@ export function ScanView({
           Clear session
         </button>
       </div>
+
+      <p className="muted mode-helper">
+        {session.outputMode === 'safe-share'
+          ? 'Safe-share: everything becomes bracket placeholders like [EMAIL_1] — best for prompts, tickets, logs, and issues.'
+          : 'Portfolio-code: Cloak List mappings with a replacement swap in valid generic identifiers inside code; secrets, string values, and paths still become placeholders.'}
+      </p>
 
       {guidanceVisible && (
         <aside className="scan-guidance" role="note" aria-label="Detection reminder">
@@ -173,8 +208,9 @@ export function ScanView({
         <PreviewPanel
           hasScanned={session.hasScanned}
           sourceText={session.sourceText}
-          findings={session.findings}
+          findings={effectiveFindings}
           cleanText={cleanText}
+          codeWarnings={codeWarnings}
           onNotice={onNotice}
         />
       </div>

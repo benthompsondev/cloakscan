@@ -2,6 +2,23 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - Unreleased
+
+### Added
+
+- Added a second output mode. **Safe-share** keeps the existing placeholder behavior; **Portfolio-code** swaps mapped custom terms found inside variable, function, parameter, property, and command names for valid generic identifiers (casing adapted), so sanitized PowerShell still reads as code. Switching modes is instant — no rescan.
+- Added **mappings** to Cloak Lists: term → replacement entries with their own category, severity, match behavior, and a code-safe flag.
+- Added Cloak List **JSON export and import** so a list (terms, mappings, and options) can move between machines. Exports contain only user-defined rules, the app warns that the rules themselves are organization-specific, and malformed imports fail safely.
+- Added **review leads**: detectors for directory attributes, Exchange workflow terms, credential workflow commands, author initials in history blocks, scheduled-job state files, and identity CSV headers. Lead findings start unchecked — they point at lines worth review and never rewrite output. AD group names in membership commands are detected as normal redactable findings.
+- Added an **invalid-code panel** that flags placeholders that landed in identifier position (`$[X]`, `function [X]`, `.[X]`, `param($[X])`), without blocking copy or download.
+- Added findings grouping for the new categories (Organization, Code identifiers, Directory / AD, Messaging / Exchange, Workflow) and a one-click review-leads filter.
+
+### Safety
+
+- Source text, findings, matched values, filenames, clipboard content, and sanitized output still never persist and cannot appear in a Cloak List export.
+- Mapping terms follow the same explicit save opt-in as plain term values; imported lists always start session-only.
+- The desktop capability surface, updater signing key, CSP, and scan overlap behavior are unchanged.
+
 ## [1.2.0] - 2026-07-07
 
 ### Changed

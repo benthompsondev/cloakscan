@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Finding } from '../lib/types';
+import type { CodeWarning } from '../lib/codeWarnings';
 import { buildPreviewSegments, segmentsToLines } from '../lib/segments';
 import { downloadTextFile } from '../lib/download';
 import { CodeView } from './CodeView';
@@ -10,6 +11,7 @@ interface PreviewPanelProps {
   sourceText: string;
   findings: Finding[];
   cleanText: string;
+  codeWarnings: CodeWarning[];
   onNotice: (notice: Notice) => void;
 }
 
@@ -18,6 +20,7 @@ export function PreviewPanel({
   sourceText,
   findings,
   cleanText,
+  codeWarnings,
   onNotice,
 }: PreviewPanelProps) {
   const lines = useMemo(
@@ -74,6 +77,29 @@ export function PreviewPanel({
         <CodeView lines={lines} label="Sanitized output with placeholders" />
       ) : (
         <div className="output-empty muted">Run a scan to see the sanitized version here.</div>
+      )}
+      {hasScanned && codeWarnings.length > 0 && (
+        <aside className="code-warnings" role="note" aria-label="Possible invalid code">
+          <strong>
+            {codeWarnings.length} spot{codeWarnings.length === 1 ? '' : 's'} may no longer be
+            valid PowerShell
+          </strong>
+          <span className="muted">
+            A placeholder landed inside an identifier. Add a code-safe replacement to a Cloak
+            List mapping and use Portfolio-code mode, or keep that finding as-is.
+          </span>
+          <ul>
+            {codeWarnings.slice(0, 6).map((w, index) => (
+              <li key={`${w.line}-${index}`}>
+                <span className="muted">line {w.line}:</span> <code>{w.snippet}</code>
+                <span className="muted"> — {w.reason}</span>
+              </li>
+            ))}
+            {codeWarnings.length > 6 && (
+              <li className="muted">…and {codeWarnings.length - 6} more.</li>
+            )}
+          </ul>
+        </aside>
       )}
       <div className="panel-foot">
         <span className="muted">

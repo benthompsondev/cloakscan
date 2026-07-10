@@ -11,14 +11,22 @@ interface FindingsPanelProps {
 const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'secrets', label: 'Secrets' },
   { id: 'infrastructure', label: 'Infrastructure' },
-  { id: 'personal', label: 'Personal' },
+  { id: 'personal', label: 'Identity' },
   { id: 'paths', label: 'Paths' },
+  { id: 'organization', label: 'Organization' },
+  { id: 'code', label: 'Code identifiers' },
+  { id: 'directory', label: 'Directory / AD' },
+  { id: 'messaging', label: 'Messaging / Exchange' },
+  { id: 'workflow', label: 'Workflow' },
 ];
 
 /** Findings organized into compact collapsible category sections. */
 export function FindingsPanel({ groups, onToggleGroup }: FindingsPanelProps) {
   const [collapsed, setCollapsed] = useState<Partial<Record<Category, boolean>>>({});
-  const totalMatches = groups.reduce((n, g) => n + g.count, 0);
+  const [showLeads, setShowLeads] = useState(true);
+  const leadCount = groups.filter((g) => g.reviewLead).length;
+  const visibleGroups = showLeads ? groups : groups.filter((g) => !g.reviewLead);
+  const totalMatches = visibleGroups.reduce((n, g) => n + g.count, 0);
 
   const toggleSection = (category: Category) =>
     setCollapsed((c) => ({ ...c, [category]: !c[category] }));
@@ -29,19 +37,30 @@ export function FindingsPanel({ groups, onToggleGroup }: FindingsPanelProps) {
         <div className="panel-title">
           <h2>Findings</h2>
           <span className="muted">
-            {groups.length} finding{groups.length === 1 ? '' : 's'} · {totalMatches} total match
+            {visibleGroups.length} finding{visibleGroups.length === 1 ? '' : 's'} · {totalMatches}{' '}
+            total match
             {totalMatches === 1 ? '' : 'es'}
           </span>
         </div>
+        {leadCount > 0 && (
+          <label className="terms-toggle-row leads-filter">
+            <input
+              type="checkbox"
+              checked={showLeads}
+              onChange={(e) => setShowLeads(e.target.checked)}
+            />
+            Show {leadCount} review lead{leadCount === 1 ? '' : 's'}
+          </label>
+        )}
       </div>
-      {groups.length === 0 ? (
+      {visibleGroups.length === 0 ? (
         <div className="output-empty muted">
           Nothing detected. Automated detection can still miss things — review manually.
         </div>
       ) : (
         <div className="finding-sections">
           {CATEGORIES.map((category) => {
-            const sectionGroups = groups.filter((g) => g.category === category.id);
+            const sectionGroups = visibleGroups.filter((g) => g.category === category.id);
             if (sectionGroups.length === 0) return null;
             const isOpen = !collapsed[category.id];
             const sectionIds = sectionGroups.flatMap((g) => g.ids);
@@ -90,6 +109,7 @@ export function FindingsPanel({ groups, onToggleGroup }: FindingsPanelProps) {
                         <div className="finding-row-main">
                           <span className="finding-name">{g.name}</span>
                           <span className={`chip chip-${g.severity}`}>{g.severity}</span>
+                          {g.reviewLead && <span className="chip chip-lead">review lead</span>}
                         </div>
                         <span className="finding-row-value muted">
                           {g.count}× · <code className="masked">{maskValue(g.value)}</code>

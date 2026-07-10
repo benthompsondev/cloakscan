@@ -124,6 +124,32 @@ text before sharing it.
   as one-term-per-line `.txt` files. Imported values follow the same term caps and
   save-on-device opt-ins as typed terms.
 
+## v1.3 coverage
+
+- **AD group names:** quoted group names in `Add/Remove/Get-ADGroupMember -Identity`,
+  `-MemberOf`, and `New-ADGroup -Name` are normal redactable findings — access and
+  license group names describe your environment.
+- **Review leads (start unchecked, never rewrite output):**
+  - *Directory attributes* — `SamAccountName`, `UserPrincipalName`, `pwdLastSet`,
+    `otherTelephone`, and friends. The attribute name is usually safe; the value on
+    that line often is not. `mail` and `Enabled` only count with a code-ish prefix.
+  - *Exchange workflow terms* — `Get-Recipient`, `RecipientTypeDetails`,
+    `RemoteUserMailbox`, `Enable-RemoteMailbox`, `RemoteRoutingAddress`,
+    `Import-PSSession`, and Exchange-configured `New-PSSession`.
+  - *Credential workflow terms* — `Export/Import-Clixml`, `PSCredential`,
+    `Send-MailMessage`, and SMTP credential helper names.
+  - *Author initials* — 2–3 uppercase letters on comment lines mentioning
+    Author/Modified/History/Revision, with a stoplist for common IT acronyms.
+  - *Scheduled workflow artifacts* — `cycle_state.json`-style state files, audit
+    logs, snapshots, and `.clixml` credential files.
+  - *CSV identity headers* — comma-separated lines with three or more identity
+    fields (Employee ID, AD username, UPN, email, activation date, ...).
+- **Cloak List mappings and Portfolio-code mode:** term → replacement entries can
+  rewrite mapped terms found in identifier position into valid generic identifiers
+  (casing adapted). String literal contents, secrets, emails, URLs, hosts, ports,
+  and paths keep bracket placeholders in both modes. See
+  [output-modes.md](output-modes.md).
+
 ## Known boundaries
 
 - Regex protection is a careful heuristic, not a complete PowerShell parser.

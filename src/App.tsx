@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { isTauri } from '@tauri-apps/api/core';
 import { scanText } from './lib/scan';
-import { buildCleanText } from './lib/sanitize';
+import { applyOutputMode, buildCleanText, type OutputMode } from './lib/sanitize';
+import { findCodeWarnings } from './lib/codeWarnings';
+import { createMappedTermsDetector } from './lib/cloakMappings';
 import { parsePrivateTerms, createPrivateTermsDetector } from './lib/customTerms';
 import { createEmptySession, type SessionState } from './lib/session';
 import { groupFindings, setFindingsEnabled } from './lib/groups';
@@ -315,11 +317,22 @@ export default function App() {
 
   // ----- scan session -----
 
-  const cleanText = useMemo(
-    () => (session.hasScanned ? buildCleanText(session.sourceText, session.findings) : ''),
-    [session],
+  // The output mode resolves into the findings themselves: portfolio-code
+  // swaps code-safe identifier replacements in as the effective placeholder.
+  const effectiveFindings = useMemo(
+    () => applyOutputMode(session.findings, session.outputMode),
+    [session.findings, session.outputMode],
   );
-  const groups = useMemo(() => groupFindings(session.findings), [session.findings]);
+  const cleanText = useMemo(
+    () => (session.hasScanned ? buildCleanText(session.sourceText, effectiveFindings) : ''),
+    [session.hasScanned, session.sourceText, effectiveFindings],
+  );
+  // Non-blocking hints that a placeholder landed in identifier position.
+  const codeWarnings = useMemo(
+    () => (session.hasScanned ? findCodeWarnings(cleanText) : []),
+    [session.hasScanned, cleanText],
+  );
+  const groups = useMemo(() => groupFindings(effectiveFindings), [effectiveFindings]);
   const candidates = useMemo(
     () =>
       session.hasScanned
@@ -354,16 +367,22 @@ export default function App() {
   const updateTerms = (patch: Partial<SessionState>) =>
     setSession((s) => ({ ...s, ...patch, findings: [], hasScanned: false }));
 
+  // Replacements are computed at scan time, so switching mode is instant and
+  // never invalidates results.
+  const setOutputMode = (outputMode: OutputMode) =>
+    setSession((s) => ({ ...s, outputMode }));
+
   const scanSession = (
     current: SessionState,
     privateTermsInput = current.privateTermsInput,
   ): SessionState => {
+    const activePacks = workspace.customPacks.filter(
+      (p) => p.enabled && activeConfig.customPackIds.includes(p.id),
+    );
     const extraDetectors = [
       ...detectorsFromCustomPacks(workspace.customPacks, activeConfig.customPackIds),
-      ...workspace.customPacks
-        .filter(
-          (p) => p.enabled && activeConfig.customPackIds.includes(p.id) && p.terms.values.length > 0,
-        )
+      ...activePacks
+        .filter((p) => p.terms.values.length > 0)
         .map((p) =>
           createPrivateTermsDetector(
             p.terms.values,
@@ -379,6 +398,16 @@ export default function App() {
             },
             `Cloak term (${p.name})`,
           ),
+        ),
+      ...activePacks
+        .filter((p) => (p.terms.mappings?.length ?? 0) > 0)
+        .map((p) =>
+          createMappedTermsDetector(p.terms.mappings ?? [], `Cloak mapping (${p.name})`, {
+            template: templateFor(
+              p.terms.termFormat ?? { id: 'indexed', customTemplate: '[{TYPE}_{INDEX}]' },
+            ),
+            label: p.terms.termLabel,
+          }),
         ),
     ];
     return {
@@ -486,7 +515,9 @@ export default function App() {
             session={session}
             groups={groups}
             candidates={candidates}
+            effectiveFindings={effectiveFindings}
             cleanText={cleanText}
+            codeWarnings={codeWarnings}
             scanMeta={scanMeta}
             workspace={workspace}
             activeConfig={activeConfig}
@@ -494,6 +525,7 @@ export default function App() {
             totalCount={detectors.length}
             onSource={setSource}
             onUpdateTerms={updateTerms}
+            onSetOutputMode={setOutputMode}
             onScan={scan}
             onNewScan={newScan}
             onToggleGroup={onToggleGroup}

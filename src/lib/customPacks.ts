@@ -1,5 +1,6 @@
 import type { Category, Detector, RawMatch, Severity } from './types';
 import type { RedactionChoice } from './redaction';
+import type { CloakMappingEntry } from './cloakMappings';
 
 /**
  * Custom packs: user-defined bundles of registry detector ids, safe custom
@@ -38,6 +39,12 @@ export interface PackTerms {
   termFormat?: RedactionChoice;
   /** Optional Cloak List-only placeholder label. Missing means CUSTOM_TERM. */
   termLabel?: string;
+  /**
+   * Optional mapping entries (term -> replacement with category, severity,
+   * match behavior, code-safe flag). Mapping TERMS are as sensitive as plain
+   * term values, so they follow the same saveTerms persistence opt-in.
+   */
+  mappings?: CloakMappingEntry[];
 }
 
 export interface CustomPack {

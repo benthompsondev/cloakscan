@@ -278,4 +278,53 @@ export const RULE_INFO: Record<string, RuleInfo> = {
     confidence: 'High — you supplied the term.',
     sample: 'Contoso staff meeting notes',
   },
+  'ad-group-name': {
+    detects:
+      'Group names quoted in AD membership commands: Add/Remove/Get-ADGroupMember -Identity, -MemberOf, and New-ADGroup -Name.',
+    falsePositives: 'Demo or placeholder group names in documentation still match.',
+    confidence: 'High — the cmdlet context is explicit.',
+    sample: 'Add-ADGroupMember -Identity "APP-Clinical-Users" -Members $user',
+  },
+  'directory-attribute': {
+    detects:
+      'Directory attribute names (SamAccountName, UserPrincipalName, pwdLastSet, otherTelephone, ...). Review lead: findings start unchecked because the attribute NAME is usually safe — the value next to it is what leaks.',
+    falsePositives: 'Any PowerShell touching AD mentions these constantly; that is why it only points.',
+    confidence: 'Low — a pointer to review, not a confirmed leak.',
+    sample: 'Get-ADUser $id -Properties SamAccountName, otherTelephone',
+  },
+  'exchange-workflow': {
+    detects:
+      'Exchange workflow markers: Get-Recipient, RecipientTypeDetails, RemoteUserMailbox, Enable-RemoteMailbox, RemoteRoutingAddress, Import-PSSession, and Exchange-configured New-PSSession calls. Review lead.',
+    falsePositives: 'Generic Exchange tutorials and docs match too.',
+    confidence: 'Low — outlines architecture rather than leaking a value.',
+    sample: 'Enable-RemoteMailbox $user -RemoteRoutingAddress $route',
+  },
+  'credential-workflow': {
+    detects:
+      'Credential handling markers: Export/Import-Clixml, PSCredential, Send-MailMessage, and SMTP credential helper names. Review lead.',
+    falsePositives: 'Every credential tutorial on the internet matches.',
+    confidence: 'Low — review the paths and usernames nearby.',
+    sample: '$cred = Import-Clixml -Path $credPath',
+  },
+  'author-initials': {
+    detects:
+      'Two- or three-letter uppercase initials on comment lines that mention Author, Modified, History, or Revision. Review lead.',
+    falsePositives: 'Acronyms in change notes; common IT abbreviations are already skipped.',
+    confidence: 'Low — initials and acronyms look identical.',
+    sample: '# 2024-05-01 Modified by JD cleanup pass',
+  },
+  'workflow-artifact': {
+    detects:
+      'Scheduled-job state and evidence files: cycle_state/run_state/last_run names, audit logs, snapshots, and .clixml credential files. Review lead.',
+    falsePositives: 'Generic file names like audit.log in unrelated tools.',
+    confidence: 'Medium — distinctive naming, low direct sensitivity.',
+    sample: 'if (Test-Path cycle_state.json) { $state = Get-Content -Path cycle_state.json }',
+  },
+  'csv-identity-header': {
+    detects:
+      'Comma-separated header lines with three or more identity fields (Employee ID, AD username, UPN, email, activation date, ...). Review lead.',
+    falsePositives: 'Column documentation and empty template files.',
+    confidence: 'Low to medium, rising with the number of identity fields.',
+    sample: 'Employee ID,AD Username,Email,Activation Date,Status',
+  },
 };
