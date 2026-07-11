@@ -41,6 +41,16 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.4.1" date="2026-07-11">
+      <description>
+        <p>
+          Correction release: the readiness summary now counts every finding
+          kept as-is (any severity), suggestions stop mislabeling person-like
+          terms as organizations, common field labels stay out of likely
+          terms, and public screenshots and media show current CloakScan.
+        </p>
+      </description>
+    </release>
     <release version="1.4.0" date="2026-07-10">
       <description>
         <p>

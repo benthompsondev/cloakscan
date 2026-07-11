@@ -62,12 +62,42 @@ const SHAPE_RULES: ShapeRule[] = [
     categoryLabel: 'Organization',
   },
   {
-    // Multi-word title-case phrases are usually org / department / site names.
-    test: (term) => /\s/.test(term.trim()),
+    // 'Project Nightjar' style code names.
+    test: (_term, lower) => /^project\s/.test(lower) || /\sproject$/.test(lower),
+    replacement: 'ProjectName',
+    categoryLabel: 'Project',
+  },
+  {
+    // Street-suffix phrases are usually addresses, not organizations.
+    test: (_term, lower) =>
+      /\s(?:street|avenue|ave|road|rd|drive|dr|boulevard|blvd|lane|ln|court|ct|crescent|way)\.?$/.test(
+        lower,
+      ),
+    replacement: 'SourceAddress',
+    categoryLabel: 'Address',
+  },
+  {
+    // Multi-word phrases with an organization cue word (Health, Group,
+    // Hospital, Services...). These generic nouns are shape hints, not a
+    // company dictionary.
+    test: (_term, lower) => /\s/.test(lower.trim()) && ORG_CUE_RE.test(lower),
     replacement: 'SourceOrg',
     categoryLabel: 'Organization',
   },
+  {
+    // Any other multi-word title phrase could just as easily be a person,
+    // place, or product — don't pretend to know. The neutral label makes it
+    // obvious this row needs a human decision.
+    test: (term) => /\s/.test(term.trim()),
+    replacement: 'ReviewTerm',
+    categoryLabel: 'Unclassified — edit before saving',
+  },
 ];
+
+// Generic organization nouns that make an org reading likely. Cue words only —
+// never real company or person names.
+const ORG_CUE_RE =
+  /\b(?:health|healthcare|hospital|clinic|medical|care|group|systems?|solutions|services|technologies|software|consulting|partners|holdings|industries|enterprises|logistics|foundation|institute|university|college|academy|agency|council|authority|association|regional|centre|center|networks?|labs?|corp|corporation|inc|ltd|llc|company)\b/;
 
 const DEFAULT_RULE = { replacement: 'SourceSystem', categoryLabel: 'Organization' };
 

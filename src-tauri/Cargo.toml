@@ -1,6 +1,6 @@
 [package]
 name = "cloakscan"
-version = "1.4.0"
+version = "1.4.1"
 description = "CloakScan - local-first text sanitizer, desktop shell"
 authors = ["Ben Thompson"]
 homepage = "https://github.com/benthompsondev/cloakscan"

@@ -41,6 +41,26 @@ test('readiness summary reports open items and settles when handled', async ({ p
   await expect(readiness).toContainText('No open items');
 });
 
+test('keeping a medium-severity finding as-is keeps readiness open', async ({ page }) => {
+  await page.goto('/#/');
+  // A lone IPv4 address: one medium-severity finding, nothing else.
+  await page.getByLabel('Source text input').fill('Server responds at 203.0.113.42 today.');
+  await page.getByRole('button', { name: 'Scan locally' }).click();
+
+  const readiness = page.getByRole('region', { name: 'Sanitization readiness' });
+  await expect(readiness).toContainText('No open items');
+
+  // Keep the finding as-is — the original value ships, so readiness must reopen.
+  await page.getByLabel(/Redact IPv4 address/).uncheck();
+  await expect(readiness).toContainText('to review');
+  await expect(readiness).toContainText('1 medium');
+  await expect(readiness).not.toContainText('No open items');
+
+  // Redacting it again settles the summary.
+  await page.getByLabel(/Redact IPv4 address/).check();
+  await expect(readiness).toContainText('No open items');
+});
+
 test('bulk candidate selection builds a pre-filled Portfolio Cloak List', async ({ page }) => {
   await page.goto('/#/');
   await page
@@ -63,17 +83,19 @@ test('bulk candidate selection builds a pre-filled Portfolio Cloak List', async 
   await panel.getByRole('button', { name: /Select likely terms/ }).click();
   await panel.getByRole('button', { name: /Build Portfolio Cloak List/ }).click();
 
-  // The Cloak List editor opens pre-filled with suggested mappings.
+  // The Cloak List editor opens pre-filled with suggested mappings,
+  // addressed by named rows rather than positional .first() lookups.
   await expect(page.getByRole('region', { name: 'Cloak List editor' })).toBeVisible();
   await expect(page.getByLabel('Cloak List name')).toHaveValue('Portfolio Cloak List');
-  const terms = page.getByLabel('Mapping term');
-  await expect(terms.first()).toHaveValue('Contoso Health');
-  const replacements = page.getByLabel('Mapping replacement identifier');
-  await expect(replacements.first()).toHaveValue('SourceOrg');
+  const contosoRow = page.getByRole('listitem', { name: 'Mapping for Contoso Health' });
+  await expect(contosoRow.getByLabel('Mapping term')).toHaveValue('Contoso Health');
+  await expect(contosoRow.getByLabel('Mapping replacement identifier')).toHaveValue('SourceOrg');
+  const nwrhRow = page.getByRole('listitem', { name: 'Mapping for NWRH' });
+  await expect(nwrhRow.getByLabel('Mapping replacement identifier')).toHaveValue('SourceSystem');
 
   // Every seeded row uses the code-only strategy and can be saved as-is.
-  const strategies = page.getByLabel('Mapping replacement strategy');
-  await expect(strategies.first()).toHaveValue('code-only');
+  await expect(contosoRow.getByLabel('Mapping replacement strategy')).toHaveValue('code-only');
+  await expect(nwrhRow.getByLabel('Mapping replacement strategy')).toHaveValue('code-only');
   await page.getByRole('button', { name: 'Save Cloak List' }).click();
   await expect(
     page.getByRole('region', { name: 'Profiles and packs' }).getByText('Portfolio Cloak List'),

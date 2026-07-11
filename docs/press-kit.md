@@ -17,9 +17,9 @@ CloakScan is an open-source Windows and Linux app that removes common secrets an
 
 ### Logo and social card
 
-- [CloakScan logo](brand/cloakguard-mark-glossy.png)
+- [CloakScan logo](brand/cloakscan-mark-glossy.png)
 - [1280 × 640 social card](media/social-card.png)
-- [Short demo](media/cloakguard-demo.gif)
+- [Short demo](media/cloakscan-demo.gif)
 
 ### Screenshots
 

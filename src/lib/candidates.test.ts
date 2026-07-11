@@ -198,6 +198,32 @@ describe('findCloakCandidates', () => {
     }
   });
 
+  it('keeps common field and UI labels out of the likely terms', () => {
+    // Regression: report/export boilerplate (Fax: Not Set, Access Type,
+    // Start Date...) kept surfacing ahead of genuinely org-specific terms.
+    const text = [
+      'Fax: Not Set',
+      'Mobile: Not Set',
+      'Fax broke twice. Fax works now.',
+      'Access Type: Standard',
+      'Access Type: Admin',
+      'Start Date confirmed. Start Date recorded.',
+      'Active Directory sync ran. Active Directory sync completed.',
+      'Contoso Health opened the case. Contoso Health closed it.',
+    ].join('\n');
+    const candidates = findCloakCandidates(text, []);
+    const byText = new Map(candidates.map((c) => [c.text, c]));
+
+    // Labels are excluded entirely or marked generic — never "likely" terms.
+    for (const label of ['Not Set', 'Fax', 'Access Type', 'Start Date', 'Active Directory']) {
+      const candidate = byText.get(label);
+      if (candidate) expect(candidate.generic, label).toBe(true);
+    }
+    // The genuinely org-specific term stays visible, likely, and first.
+    expect(byText.get('Contoso Health')?.generic).toBe(false);
+    expect(candidates[0].text).toBe('Contoso Health');
+  });
+
   it('marks well-known IT phrases generic and sorts them after org-specific terms', () => {
     const text = [
       'Active Directory sync ran.',

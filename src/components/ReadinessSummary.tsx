@@ -26,8 +26,8 @@ export function ReadinessSummary({ report, outputMode }: ReadinessSummaryProps) 
       </div>
       {report.status === 'ready' ? (
         <p className="muted readiness-note">
-          Every finding is handled and nothing is flagged. Automated detection can still miss
-          things — give the output one last read before sharing.
+          Nothing from this scan is left open. Automated detection can still miss things — give
+          the output one last read before sharing.
         </p>
       ) : (
         <ul className="readiness-items">

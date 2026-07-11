@@ -174,6 +174,60 @@ describe('v2 persistence', () => {
     expect(loadPreferencesV2()!.customPacks[0].terms.values).toEqual([]);
   });
 
+  it('never persists mapping terms without the explicit per-pack opt-in', () => {
+    const mapping = {
+      id: 'map-1',
+      term: 'NirvInternal',
+      replacement: 'SourceSystem',
+      categoryLabel: 'Organization',
+      severity: 'medium' as const,
+      matchMode: 'ci-literal' as const,
+      codeSafe: true,
+      strategy: 'code-only' as const,
+    };
+    savePreferencesV2({
+      version: 2,
+      activeProfileId: 'balanced',
+      profiles: [],
+      customPacks: [
+        customPack({ terms: { ...emptyPackTerms(), mappings: [mapping] } }), // saveTerms is false
+      ],
+    });
+    const raw = localStorage.getItem(PREFERENCES_STORAGE_KEY_V2)!;
+    expect(raw).not.toContain('NirvInternal');
+    expect(raw).not.toContain('mappings');
+    expect(loadPreferencesV2()!.customPacks[0].terms.mappings).toBeUndefined();
+  });
+
+  it('persists mapping terms only when the pack saveTerms opt-in is on too', () => {
+    const mapping = {
+      id: 'map-1',
+      term: 'NirvInternal',
+      replacement: 'SourceSystem',
+      categoryLabel: 'Organization',
+      severity: 'medium' as const,
+      matchMode: 'ci-literal' as const,
+      codeSafe: true,
+      strategy: 'code-only' as const,
+    };
+    // No global save at all -> nothing in storage (the first opt-in).
+    expect(localStorage.getItem(PREFERENCES_STORAGE_KEY_V2)).toBeNull();
+
+    // Global save + per-pack saveTerms (the second opt-in) -> round-trips.
+    savePreferencesV2({
+      version: 2,
+      activeProfileId: 'balanced',
+      profiles: [],
+      customPacks: [
+        customPack({ terms: { ...emptyPackTerms(), saveTerms: true, mappings: [mapping] } }),
+      ],
+    });
+    const loaded = loadPreferencesV2()!.customPacks[0].terms.mappings;
+    expect(loaded).toHaveLength(1);
+    expect(loaded![0].term).toBe('NirvInternal');
+    expect(loaded![0].strategy).toBe('code-only');
+  });
+
   it('discards unknown fields, unknown ids, malformed rules, and oversized arrays', () => {
     const stored = {
       version: 2,

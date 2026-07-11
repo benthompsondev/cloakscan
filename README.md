@@ -11,7 +11,7 @@ CloakScan is a local-first desktop app (Windows and Linux) for cleaning code, lo
 
 I built it because manually checking every script and log for hostnames, usernames, paths, tokens, and organization-specific details is slow and easy to get wrong. The workflow is deliberately simple: paste text, scan it locally, review every replacement, and copy the cleaned version.
 
-![CloakScan demo: load a synthetic sample, scan locally, and review the cleaned text](docs/media/cloakguard-demo.gif)
+![CloakScan demo: load a synthetic sample, scan locally, and review the cleaned text](docs/media/cloakscan-demo.gif)
 
 ![CloakScan showing a local scan and review](docs/screenshots/scan-desktop-1440x900.png)
 
@@ -31,7 +31,7 @@ It is smaller and more focused than a full DLP platform or repository secret sca
 
 ### Windows
 
-Download `CloakScan-Setup-1.4.0-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakscan/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
+Download `CloakScan-Setup-1.4.1-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakscan/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
 
 The installer is currently unsigned, so Windows SmartScreen may show a warning. Verify the published SHA-256 checksum before running it.
 
@@ -43,7 +43,7 @@ For Debian 12, Ubuntu 22.04, or newer, install the `.deb`:
 
 ```bash
 cd ~/Downloads
-sudo apt install ./CloakScan_1.4.0_amd64.deb
+sudo apt install ./CloakScan_1.4.1_amd64.deb
 ```
 
 Launch it from your applications menu or run:
@@ -56,8 +56,8 @@ The AppImage is portable and does not install anything:
 
 ```bash
 cd ~/Downloads
-chmod +x CloakScan_1.4.0_amd64.AppImage
-./CloakScan_1.4.0_amd64.AppImage
+chmod +x CloakScan_1.4.1_amd64.AppImage
+./CloakScan_1.4.1_amd64.AppImage
 ```
 
 See [the Linux guide](docs/linux.md) for updates, uninstall steps, and troubleshooting.
@@ -100,7 +100,7 @@ npm run verify    # audit + lint + unit tests + build + e2e, all in one
 4. Review **Possible names & terms to review**. These are guesses only. Nothing is hidden until you choose **Hide this session** or add the term to a reusable Cloak List. Likely terms come with a suggested generic replacement, and you can select several and **Build Portfolio Cloak List** to open the editor pre-filled with ready-to-edit mappings. Well-known product phrases are tagged *common term* and sorted last.
 5. Review the findings. Each one shows its category, severity, a masked preview, and the replacement placeholder. Toggle off anything you want to keep. **Review leads** start unchecked — they point at IT-automation fingerprints worth a look without rewriting anything.
 6. Pick an output mode: **Safe-share** (bracket placeholders, the default) or **Portfolio-code** (mapped terms inside variable/function/property/command names become valid generic identifiers, so PowerShell headed for a public repo still reads as code). The mode is independent of the detection profile and also lives in Settings → General. Each mapping picks a replacement strategy: code identifiers only, genericize everywhere, placeholder, or review lead only. See [Output modes and Cloak List mappings](docs/output-modes.md).
-7. Check the **Sanitization readiness** summary: high-severity findings kept as-is, unreviewed review leads, suggestions you have not handled, and invalid-code warnings, in one place. It is guidance, not a guarantee.
+7. Check the **Sanitization readiness** summary: findings you kept as-is (any severity - the original value stays in the output), unreviewed review leads, suggestions you have not handled, and invalid-code warnings, in one place. It is guidance, not a guarantee.
 8. Copy the cleaned output or download it as a `.txt` file. Formatting is preserved, and repeated values reuse the same placeholder. If a placeholder landed somewhere that breaks code, a warning panel says so, links to the line, and offers the Portfolio-code switch when that is the likely fix.
 
 ## How it works
@@ -139,7 +139,7 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Project status
 
-Current release: **v1.4.0**
+Current release: **v1.4.1**
 
 - The Portfolio Review Workspace ties the cleanup flow together: mapping suggestions, bulk actions, a Build Portfolio Cloak List flow, and a sanitization readiness summary.
 - Cloak List mappings pick a replacement strategy: code identifiers only, genericize everywhere, placeholder, or review lead only. Lists exported by 1.3 keep their old behavior on import.

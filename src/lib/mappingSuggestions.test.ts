@@ -37,11 +37,41 @@ describe('suggestMapping', () => {
     });
   });
 
-  it('suggests SourceOrg for multi-word title phrases', () => {
+  it('suggests SourceOrg for multi-word phrases with an organization cue word', () => {
     expect(suggestMapping('Northwind Regional Health')).toEqual({
       term: 'Northwind Regional Health',
       replacement: 'SourceOrg',
       categoryLabel: 'Organization',
+    });
+    expect(suggestMapping('Contoso Health')).toEqual({
+      term: 'Contoso Health',
+      replacement: 'SourceOrg',
+      categoryLabel: 'Organization',
+    });
+  });
+
+  it('does not label ambiguous person-like phrases as an organization', () => {
+    for (const term of ['Alex Demo', 'Bea Example']) {
+      const suggestion = suggestMapping(term);
+      expect(suggestion.categoryLabel).not.toBe('Organization');
+      expect(suggestion.replacement).not.toBe('SourceOrg');
+      expect(suggestion.replacement).toBe('ReviewTerm');
+    }
+  });
+
+  it('suggests a project name for project code names', () => {
+    expect(suggestMapping('Project Nightjar')).toEqual({
+      term: 'Project Nightjar',
+      replacement: 'ProjectName',
+      categoryLabel: 'Project',
+    });
+  });
+
+  it('suggests an address replacement for street-suffix phrases', () => {
+    expect(suggestMapping('Demo Street')).toEqual({
+      term: 'Demo Street',
+      replacement: 'SourceAddress',
+      categoryLabel: 'Address',
     });
   });
 });

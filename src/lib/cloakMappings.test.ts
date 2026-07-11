@@ -194,6 +194,68 @@ describe('replacement precedence', () => {
     expect(ids).not.toContain('cloak-mapping');
   });
 
+  // Direct precedence checks: a mapped term embedded in a larger sensitive
+  // value must lose to the full value, one case per built-in family.
+  const precedenceCases: { name: string; text: string; term: string; winner: string }[] = [
+    {
+      name: 'GUID',
+      text: 'Correlation 4de1cbb2-89ab-4cde-9012-3456789abcde logged.',
+      term: 'cbb2',
+      winner: 'guid-identifier',
+    },
+    {
+      name: 'IPv4 address',
+      text: 'Ping 203.0.113.42 before retrying.',
+      term: '113',
+      winner: 'ipv4',
+    },
+    {
+      name: 'internal hostname',
+      text: 'Deploy lands on nirv-app01.corp.example tonight.',
+      term: 'nirv',
+      winner: 'internal-hostname',
+    },
+    {
+      name: 'internal URL',
+      text: 'Docs sit at https://nirv.example.internal/runbook today.',
+      term: 'nirv',
+      winner: 'internal-url',
+    },
+    {
+      name: 'UNC path',
+      text: String.raw`Copy from \\nirv-fs01\share\export.csv now.`,
+      term: 'nirv',
+      winner: 'unc-path',
+    },
+    {
+      name: 'user file path',
+      text: String.raw`Log written to C:\Users\nirvadmin\out.log already.`,
+      term: 'nirv',
+      winner: 'windows-user-path',
+    },
+    {
+      name: 'credential-bearing connection string',
+      text: 'Server=nirv-sql01;Database=app;User Id=svc_app;Password=Fake1234!;',
+      term: 'nirv',
+      winner: 'connection-string',
+    },
+  ];
+
+  for (const { name, text, term, winner } of precedenceCases) {
+    it(`${name} beats a mapped term inside it`, () => {
+      const findings = scanText(text, {
+        extraDetectors: [
+          createMappedTermsDetector([
+            entry({ term, replacement: 'SourceSystem', categoryLabel: 'Organization' }),
+          ]),
+        ],
+      });
+      const ids = findings.map((f) => f.detectorId);
+      expect(ids, `${name} detector should fire`).toContain(winner);
+      expect(ids, 'mapped term must lose the overlap').not.toContain('cloak-mapping');
+    });
+  }
+
   it('longer mapped matches win over shorter overlapping ones', () => {
     const findings = scanWith('$NirvSystemID = 1', [nirv, nirvSystem]);
     expect(findings).toHaveLength(1);

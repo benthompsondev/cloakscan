@@ -32,7 +32,7 @@ One scan screen: paste or import text â†’ optionally add custom terms to hide â†
 
 ## Scope Boundaries
 
-- In scope: the desktop scan screen, Settings (profiles & packs with a draft-based Profile Editor, Cloak Lists, rule controls, redaction formats, privacy), Privacy/About page, hash navigation, file import/download, session-only custom terms to hide, 41 registered detectors, four built-in profiles, built-in country packs, custom packs with labeled-field rules, opt-in preference storage, production launchers, unit/e2e tests, CI, and docs.
+- In scope: the desktop scan screen, Settings (profiles & packs with a draft-based Profile Editor, Cloak Lists, rule controls, redaction formats, privacy), Privacy/About page, hash navigation, file import/download, session-only custom terms to hide, 49 registered detectors, four built-in profiles, built-in country packs, custom packs with labeled-field rules, opt-in preference storage, production launchers, unit/e2e tests, CI, and docs.
 - In scope since v0.6.1: a Tauri 2 desktop shell (`src-tauri/`, see `docs/desktop.md`) that bundles the same static frontend with one save-dialog command and one Boolean update-capability check. Windows-only at first; Linux x86_64 (`.deb` + AppImage, see `docs/linux.md`) ships with v1.1.0.
 - In scope for v0.6.5: public source repository, Windows setup release, checksum, and the `CloakScan Project` installer publisher label.
 - In scope for v0.9.0: a user-triggered signed updater that contacts GitHub through Tauri's Rust plugin while the scanning webview keeps `connect-src 'none'`.

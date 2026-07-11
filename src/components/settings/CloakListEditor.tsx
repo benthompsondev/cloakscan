@@ -296,7 +296,11 @@ export function CloakListEditor({
               const error =
                 m.term.trim() !== '' || m.replacement !== '' ? validateMappingEntry(m) : null;
               return (
-                <li key={m.id} className="mapping-row">
+                <li
+                  key={m.id}
+                  className="mapping-row"
+                  aria-label={m.term.trim() !== '' ? `Mapping for ${m.term.trim()}` : 'New mapping'}
+                >
                   <input
                     className="rule-search mapping-term"
                     value={m.term}

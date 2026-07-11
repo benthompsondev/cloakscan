@@ -8,7 +8,7 @@ reference/source of truth. Recreate the in-app logo as a clean **SVG** from them
   (Full color, Mono dark, Mono mint) plus the icon construction: **shield outline +
   cloak swoosh + secure indicator (pill with three dots) = finished mark**. Build
   `ShieldLogo.tsx` as an SVG from the **Full color** variant.
-- **`cloakguard-mark-glossy.png`** - the glossy/3D hero version of the mark. Use for
+- **`cloakscan-mark-glossy.png`** - the glossy/3D hero version of the mark. Use for
   large/marketing contexts and as the visual target for the app-icon tiles. Do not try
   to reproduce the gloss in the tiny in-app SVG.
 - **`brand-sheet-app-icons.png`** - app-icon tiles at 512 / 180 / 32 for dark and light

@@ -202,7 +202,7 @@ export function usableMappings(entries: readonly CloakMappingEntry[]): CloakMapp
   const out: CloakMappingEntry[] = [];
   for (const entry of entries) {
     if (validateMappingEntry(entry) !== null) continue;
-    const key = `${entry.matchMode} ${
+    const key = `${entry.matchMode}\u0000${
       entry.matchMode === 'literal' ? entry.term.trim() : entry.term.trim().toLowerCase()
     }`;
     if (seen.has(key)) continue;

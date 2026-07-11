@@ -55,8 +55,52 @@ describe('assessReadiness', () => {
       outputMode: 'safe-share',
     });
     expect(report.status).toBe('review');
-    expect(report.items[0].kind).toBe('high-kept');
+    expect(report.items[0].kind).toBe('kept-findings');
     expect(report.items[0].tone).toBe('warn');
+    expect(report.items[0].message).toContain('1 high');
+  });
+
+  it('warns about medium-severity findings kept as-is', () => {
+    const report = assessReadiness({
+      findings: [finding({ severity: 'medium', enabled: false })],
+      candidates: [],
+      codeWarnings: [],
+      outputMode: 'safe-share',
+    });
+    expect(report.status).toBe('review');
+    expect(report.items[0].kind).toBe('kept-findings');
+    expect(report.items[0].tone).toBe('warn');
+    expect(report.items[0].message).toContain('1 medium');
+  });
+
+  it('reports low-severity keeps as informational, still not ready', () => {
+    const report = assessReadiness({
+      findings: [finding({ severity: 'low', enabled: false })],
+      candidates: [],
+      codeWarnings: [],
+      outputMode: 'safe-share',
+    });
+    expect(report.status).toBe('review');
+    expect(report.items[0].kind).toBe('kept-findings-low');
+    expect(report.items[0].tone).toBe('info');
+  });
+
+  it('splits mixed keeps into one warning and one informational item', () => {
+    const report = assessReadiness({
+      findings: [
+        finding({ id: 'f1', severity: 'high', enabled: false }),
+        finding({ id: 'f2', severity: 'medium', enabled: false }),
+        finding({ id: 'f3', severity: 'low', enabled: false }),
+      ],
+      candidates: [],
+      codeWarnings: [],
+      outputMode: 'safe-share',
+    });
+    const serious = report.items.find((i) => i.kind === 'kept-findings');
+    const low = report.items.find((i) => i.kind === 'kept-findings-low');
+    expect(serious?.count).toBe(2);
+    expect(serious?.message).toContain('1 high, 1 medium');
+    expect(low?.count).toBe(1);
   });
 
   it('does not count a disabled review lead as a high-severity keep', () => {

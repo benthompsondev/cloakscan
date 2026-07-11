@@ -96,9 +96,10 @@ build can read them.
 After a scan, three panels work together:
 
 - **Sanitization readiness** — one summary of what still deserves a look:
-  high-severity findings you kept as-is, unreviewed review leads, suggested
-  terms you have not dealt with, and invalid-code warnings. "No open items"
-  means exactly that — it is guidance, not a guarantee.
+  findings of any severity you kept as-is (the original value stays in the
+  output), unreviewed review leads, suggested terms you have not dealt with,
+  and invalid-code warnings. "No open items" means exactly that — it is
+  guidance, not a guarantee.
 - **Possible names & terms to review** — suggestions now sort org-specific
   terms first and tag well-known product phrases (Active Directory, Start
   Date) as *common term*. Each likely term shows a suggested generic

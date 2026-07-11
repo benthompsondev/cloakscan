@@ -50,13 +50,13 @@ describe('public demo media', () => {
   });
 
   it('keeps the short GIF near the top of the README before the static screenshot', () => {
-    const gif = readFileSync(join(root, 'docs', 'media', 'cloakguard-demo.gif'));
+    const gif = readFileSync(join(root, 'docs', 'media', 'cloakscan-demo.gif'));
     expect(gif.subarray(0, 6).toString('ascii')).toMatch(/^GIF8[79]a$/);
     expect(gif.length).toBeLessThan(4 * 1024 * 1024);
 
     const readme = readFileSync(join(root, 'README.md'), 'utf8');
-    expect(readme.indexOf('docs/media/cloakguard-demo.gif')).toBeGreaterThan(-1);
-    expect(readme.indexOf('docs/media/cloakguard-demo.gif')).toBeLessThan(
+    expect(readme.indexOf('docs/media/cloakscan-demo.gif')).toBeGreaterThan(-1);
+    expect(readme.indexOf('docs/media/cloakscan-demo.gif')).toBeLessThan(
       readme.indexOf('docs/screenshots/scan-desktop-1440x900.png'),
     );
   });

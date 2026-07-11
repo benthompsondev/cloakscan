@@ -2,6 +2,25 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.1] - 2026-07-11
+
+### Fixed
+
+- The **Sanitization readiness** summary now counts every ordinary finding kept as-is, not just high-severity ones. High and medium keeps are warnings, low keeps are informational, and a kept finding of any severity means the summary can no longer say "No open items" while a detected value is still in the output. Review leads stay a separate item and are never double-counted.
+- The all-clear wording no longer claims every finding is handled — it now says nothing from the scan is left open, and still reminds you detection can miss things.
+- Mapping suggestions stopped guessing **Organization / SourceOrg** for ambiguous person-like terms (Alex Demo, Bea Example). Multi-word terms only get the organization suggestion when they carry an org cue word (Health, Group, Services, ...); project code names suggest ProjectName, street-suffix phrases suggest SourceAddress, and everything else gets a neutral ReviewTerm marked for editing.
+- Common field and UI labels (Not Set, Fax, Access Type, Account Type, ...) no longer surface as likely org terms — they are tagged *common term*, sort last, and are excluded from **Select likely terms**. Unknown acronyms and genuinely org-specific terms stay visible.
+
+### Changed
+
+- Public screenshots, the social card, and the README demo GIF now show current CloakScan (the old ones still showed CloakGuard-era UI). The demo GIF moved to `docs/media/cloakscan-demo.gif`; all visual samples stay synthetic.
+- Cloak List editor mapping rows now carry a per-term accessible name (`Mapping for <term>`), which the workspace E2E tests use instead of positional lookups.
+- Repo docs caught up with reality: PROJECT_SPEC says 49 registered rules, AGENTS.md describes CloakScan and the current launchers, env var, and desktop capability surface.
+
+### Safety
+
+- No behavior change to what persists: mapping terms still only store behind the global preferences opt-in **plus** the per-list save-terms opt-in, now locked in by direct tests. New mapping-precedence tests prove GUIDs, IPs, hostnames, URLs, UNC and file paths, and credential-bearing connection strings always beat a mapped term inside them.
+
 ## [1.4.0] - 2026-07-10
 
 ### Added

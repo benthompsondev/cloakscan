@@ -14,7 +14,8 @@ export type ReadinessTone = 'warn' | 'info';
 
 export interface ReadinessItem {
   kind:
-    | 'high-kept'
+    | 'kept-findings'
+    | 'kept-findings-low'
     | 'review-leads'
     | 'candidates'
     | 'code-warnings';
@@ -44,17 +45,37 @@ export function assessReadiness(input: {
   const { findings, candidates, codeWarnings, outputMode } = input;
   const items: ReadinessItem[] = [];
 
-  const highKept = findings.filter(
-    (f) => !f.enabled && f.severity === 'high' && f.reviewLead !== true,
-  );
-  if (highKept.length > 0) {
+  // Any disabled ordinary finding means a detected value ships unchanged, so
+  // every severity counts here. Review leads are tracked separately below.
+  const kept = findings.filter((f) => !f.enabled && f.reviewLead !== true);
+  const keptSerious = kept.filter((f) => f.severity === 'high' || f.severity === 'medium');
+  const keptLow = kept.filter((f) => f.severity === 'low');
+  if (keptSerious.length > 0) {
+    const highCount = keptSerious.filter((f) => f.severity === 'high').length;
+    const mediumCount = keptSerious.length - highCount;
+    const breakdown = [
+      highCount > 0 ? `${highCount} high` : '',
+      mediumCount > 0 ? `${mediumCount} medium` : '',
+    ]
+      .filter(Boolean)
+      .join(', ');
     items.push({
-      kind: 'high-kept',
-      count: highKept.length,
-      message: `${plural(highKept.length, 'high-severity finding')} kept as-is — the original value${
-        highKept.length === 1 ? ' is' : 's are'
+      kind: 'kept-findings',
+      count: keptSerious.length,
+      message: `${plural(keptSerious.length, 'finding')} (${breakdown}) kept as-is — the original value${
+        keptSerious.length === 1 ? ' is' : 's are'
       } still in the output.`,
       tone: 'warn',
+    });
+  }
+  if (keptLow.length > 0) {
+    items.push({
+      kind: 'kept-findings-low',
+      count: keptLow.length,
+      message: `${plural(keptLow.length, 'low-severity finding')} kept as-is — the original value${
+        keptLow.length === 1 ? ' stays' : 's stay'
+      } in the output.`,
+      tone: 'info',
     });
   }
 

@@ -139,6 +139,13 @@ const DATE_FORMAT_TOKENS = new Set(['YYYY', 'YY', 'MM', 'MMM', 'MMMM', 'DD', 'HH
  * normalized (lowercase, collapsed spaces).
  */
 const GENERIC_IT_PHRASES = new Set([
+  // Field/UI labels and form boilerplate that repeat in exports and reports.
+  'not set',
+  'not applicable',
+  'not available',
+  'fax',
+  'access type',
+  'account type',
   'active directory',
   'azure active directory',
   'entra id',
