@@ -1,25 +1,66 @@
 # CloakScan
 
-[▶ Try the live demo](https://benthompsondev.github.io/cloakscan/) — runs entirely in your browser, nothing is uploaded. Or [download the desktop app](https://github.com/benthompsondev/cloakscan/releases/latest) for offline use on Windows or Linux.
+A local-first tool for cleaning sensitive details out of scripts, logs, prompts, and support text before you share them. Scanning runs on your device — no upload, no account, no backend, no telemetry. Its PowerShell-aware **Portfolio-code** mode keeps reviewed example code readable instead of turning it into placeholder-filled soup.
 
 [![CI](https://github.com/benthompsondev/cloakscan/actions/workflows/ci.yml/badge.svg)](https://github.com/benthompsondev/cloakscan/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/benthompsondev/cloakscan)](https://github.com/benthompsondev/cloakscan/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/benthompsondev/cloakscan/total?label=downloads)](https://github.com/benthompsondev/cloakscan/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-CloakScan is a local-first desktop app (Windows and Linux) for cleaning code, logs, prompts, support tickets, and draft posts before sharing them. Scanning runs on your device. There is no account, backend, telemetry, or upload.
+**[▶ Try the live demo](https://benthompsondev.github.io/cloakscan/)** — in your browser, nothing uploaded ·
+**[⬇ Download v1.5.0](https://github.com/benthompsondev/cloakscan/releases/latest)** — Windows setup / Linux AppImage / `.deb` ·
+**[See a before & after](#what-the-output-looks-like)** ·
+**[Release notes](https://github.com/benthompsondev/cloakscan/releases/tag/v1.5.0)**
 
-I built it because manually checking every script and log for hostnames, usernames, paths, tokens, and organization-specific details is slow and easy to get wrong. The workflow is deliberately simple: paste text, scan it locally, review every replacement, and copy the cleaned version.
+![CloakScan demo: load a synthetic sample, scan locally, build a Cloak List from suggestions, rescan, compare output modes, and open the export kit](docs/media/cloakscan-demo.gif)
 
-![CloakScan demo: load a synthetic sample, scan locally, and review the cleaned text](docs/media/cloakscan-demo.gif)
+## What the output looks like
+
+One synthetic PowerShell snippet, one Cloak List mapping (`Nirv` → `SourceSystem`, code identifiers only), two output modes. This is real engine output, not a mockup:
+
+**Input**
+
+```powershell
+$NirvExportPath = "\\nirv-fs01\exports\audit.csv"
+$BackupPass = ConvertTo-SecureString "demo-secret-not-real" -AsPlainText -Force
+Enable-NirvAccount -Identity $User
+```
+
+**Safe-share** — maximum redaction for logs, tickets, prompts, and troubleshooting text. Everything becomes a bracket placeholder:
+
+```powershell
+$[CUSTOM_TERM_1]ExportPath = "[UNC_PATH_1]"
+$BackupPass = ConvertTo-SecureString "[SECRET_1]" -AsPlainText -Force
+Enable-[CUSTOM_TERM_1]Account -Identity $User
+```
+
+**Portfolio-code** — organization-specific terms in identifier position become readable generic names, so the script still reads as working code. Secrets, paths, hosts, and other sensitive values stay placeholders:
+
+```powershell
+$SourceSystemExportPath = "[UNC_PATH_1]"
+$BackupPass = ConvertTo-SecureString "[SECRET_1]" -AsPlainText -Force
+Enable-SourceSystemAccount -Identity $User
+```
+
+The `Nirv` → `SourceSystem` pair comes from a **Cloak List** — your own reviewed mappings for the organization-specific terminology only you can recognize. Building one takes human judgment, and having one is not proof the output is safe; it is how you teach CloakScan the terms no generic rule could know.
 
 ![CloakScan showing a local scan and review](docs/screenshots/scan-desktop-1440x900.png)
 
-## Why CloakScan
+## Why I built this
 
-Pasting sensitive text into an unknown redaction website defeats the point. CloakScan keeps the scan on your device and shows every replacement before you copy the result.
+The most useful PowerShell scripts and support write-ups are usually the ones you cannot share: they are full of credentials, internal paths, hostnames, access groups, and organization-specific names. Basic find-and-replace redaction hides those details but leaves the code unreadable — nobody can review `$[X]ExportPath`. CloakScan runs the whole scan locally and helps produce material that is both safer to share and still worth reading, whether that is a log going into a ticket, a prompt going into an AI tool, or a script going into a portfolio.
 
-It is smaller and more focused than a full DLP platform or repository secret scanner. It does not monitor files, enforce company policy, or promise to catch everything. It is meant for the awkward last step before sharing a log, script, prompt, ticket, or post. Built-in rules handle common formats, and Cloak Lists cover the names and work-specific terms only you know.
+It is deliberately smaller than a DLP platform or a repository secret scanner: no file monitoring, no policy enforcement, just the awkward last step before you paste something somewhere public.
+
+## What it does not do
+
+Honesty matters more than a feature list here:
+
+- CloakScan assists your review. It cannot guarantee it caught every sensitive value — pattern-based detection always has misses.
+- **You still need to read the output before sharing it.** Every mode, every time.
+- Organization-specific terminology (product names, team names, codenames) needs a Cloak List — generic rules cannot know your internal vocabulary.
+- Portfolio-code trades some redaction for readability by design. It deserves the most careful human review of any output.
+- It is not an enterprise DLP replacement and does not try to be.
 
 ⭐ Star it if it is useful. That makes the project easier for other people to find.
 

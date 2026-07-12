@@ -2,7 +2,12 @@
 
 Thanks for taking a look at the project.
 
-CloakScan handles text that may contain private information, so privacy regressions matter as much as ordinary bugs. Please use synthetic examples in issues, tests, screenshots, and pull requests. Never paste a real key, internal hostname, work log, customer record, or other sensitive value into the repository.
+CloakScan handles text that may contain private information, so privacy regressions matter as much as ordinary bugs. Please use synthetic examples in issues, tests, screenshots, and pull requests. Never paste a real key, internal hostname, work log, customer record, employer detail, medical information, or other sensitive value into the repository — not even "just to show the bug".
+
+Two ground rules for reports:
+
+- **Detector gaps:** show them with the smallest synthetic fixture that reproduces the miss (`example.internal`, `DEMO-NOT-REAL`, fake names). If your real case involves private data, rebuild it synthetically first.
+- **Security-sensitive findings** (a way to make CloakScan leak, persist, or transmit data it should not): follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
 
 ## Local setup
 
