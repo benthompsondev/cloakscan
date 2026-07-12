@@ -29,6 +29,11 @@ import {
   detectorsFromCustomPacks,
   type CustomPack,
 } from './lib/customPacks';
+import {
+  applyCloakListToWorkspace,
+  cloneConfig,
+  type Workspace,
+} from './lib/workspaceTransitions';
 import { templateFor, type RedactionChoice } from './lib/redaction';
 import { candidateKey, findCloakCandidates } from './lib/candidates';
 import { useHashRoute } from './hooks/useHashRoute';
@@ -56,25 +61,9 @@ export interface CloakListSeed {
   terms: string[];
 }
 
-export interface Workspace {
-  remember: boolean;
-  /** A built-in id, 'unsaved', or a named profile id. */
-  activeProfileId: string;
-  /** Session-only configuration created by modifying a built-in preset. */
-  unsaved: ProfileConfig | null;
-  profiles: ProfileConfig[];
-  customPacks: CustomPack[];
-}
-
-function cloneConfig(config: ProfileConfig): ProfileConfig {
-  return {
-    ...config,
-    packIds: [...config.packIds],
-    customPackIds: [...config.customPackIds],
-    overrides: { ...config.overrides },
-    format: { ...config.format },
-  };
-}
+// Workspace and its pure transitions live in the lib layer so "save this
+// list and rescan" can be computed without touching React state ordering.
+export type { Workspace } from './lib/workspaceTransitions';
 
 export default function App() {
   const route = useHashRoute();
@@ -381,15 +370,23 @@ export default function App() {
   const setOutputMode = (outputMode: OutputMode) =>
     setSession((s) => ({ ...s, outputMode }));
 
-  const scanSession = (
+  /**
+   * Run a scan against EXPLICIT configuration values. Callers that just
+   * changed the workspace (save-and-use) pass the freshly computed values
+   * directly — never React state that may not have re-rendered yet.
+   */
+  const scanSessionWith = (
     current: SessionState,
+    config: ProfileConfig,
+    customPacks: CustomPack[],
+    detectorIds: string[],
     privateTermsInput = current.privateTermsInput,
   ): SessionState => {
-    const activePacks = workspace.customPacks.filter(
-      (p) => p.enabled && activeConfig.customPackIds.includes(p.id),
+    const activePacks = customPacks.filter(
+      (p) => p.enabled && config.customPackIds.includes(p.id),
     );
     const extraDetectors = [
-      ...detectorsFromCustomPacks(workspace.customPacks, activeConfig.customPackIds),
+      ...detectorsFromCustomPacks(customPacks, config.customPackIds),
       ...activePacks
         .filter((p) => p.terms.values.length > 0)
         .map((p) =>
@@ -430,19 +427,71 @@ export default function App() {
           template: templateFor(current.termsFormat),
           label: current.termsLabel,
         },
-        enabledDetectorIds: enabledIds,
+        enabledDetectorIds: detectorIds,
         extraDetectors,
-        placeholderTemplate: templateFor(activeConfig.format),
+        placeholderTemplate: templateFor(config.format),
       }),
       hasScanned: true,
     };
   };
+
+  /** Scan with the CURRENT workspace-derived configuration. */
+  const scanSession = (
+    current: SessionState,
+    privateTermsInput = current.privateTermsInput,
+  ): SessionState =>
+    scanSessionWith(current, activeConfig, workspace.customPacks, enabledIds, privateTermsInput);
 
   const scan = () => {
     const startedAt = new Date();
     const t0 = performance.now();
     setSession((current) => scanSession(current));
     setScanMeta({ startedAt, durationMs: performance.now() - t0 });
+  };
+
+  /**
+   * "Save, use this list & rescan": save the Cloak List, enable it in the
+   * active configuration (built-ins fork to the Unsaved configuration,
+   * named profiles update only themselves), return to Scan, and rescan the
+   * same source with the NEWLY COMPUTED configuration — the pure transition
+   * result is passed straight into the scan, so stale React state can never
+   * be used. Everything is computed before anything is applied: a failure
+   * leaves no half-applied workspace and no duplicate list.
+   */
+  const saveAndUseList = (pack: CustomPack) => {
+    const exists = workspace.customPacks.some((p) => p.id === pack.id);
+    if (!exists && workspace.customPacks.length >= MAX_CUSTOM_PACKS) {
+      showNotice({ kind: 'err', text: `At most ${MAX_CUSTOM_PACKS} custom packs.` });
+      return;
+    }
+    try {
+      const startedAt = new Date();
+      const t0 = performance.now();
+      const next = applyCloakListToWorkspace(workspace, pack);
+      const scanned = scanSessionWith(
+        session,
+        next.activeConfig,
+        next.customPacks,
+        next.enabledDetectorIds,
+      );
+      // Nothing above touched state; apply both results together.
+      commit(next.workspace, { invalidate: false });
+      setSession(scanned);
+      setScanMeta({ startedAt, durationMs: performance.now() - t0 });
+      window.location.hash = '#/';
+      const count = scanned.findings.length;
+      showNotice({
+        kind: 'ok',
+        text: `Cloak List saved and applied — rescan found ${count} finding${
+          count === 1 ? '' : 's'
+        }.`,
+      });
+    } catch {
+      showNotice({
+        kind: 'err',
+        text: 'Could not apply the Cloak List. Nothing was changed.',
+      });
+    }
   };
 
   const hideCandidate = (term: string) => {
@@ -493,9 +542,16 @@ export default function App() {
   const onToggleGroup = (ids: readonly string[], enabled: boolean) =>
     setSession((s) => ({ ...s, findings: setFindingsEnabled(s.findings, ids, enabled) }));
 
+  // Clear session: every piece of ephemeral state goes — source, findings,
+  // output, suggestions and dismissals, session terms, the pending Cloak
+  // List seed, scan metadata, and notices. Panels that exist only after a
+  // scan (comparison, export kit, candidate selection) unmount with
+  // hasScanned and lose their local state with it. Remembered profiles,
+  // Cloak Lists, and preferences are deliberately untouched.
   const clearAll = () => {
     setSession(createEmptySession());
     setScanMeta(null);
+    setListSeed(null);
     setNotice(null);
   };
 
@@ -507,6 +563,7 @@ export default function App() {
     onSetOutputMode: setOutputMode,
     listSeed,
     onConsumeListSeed: () => setListSeed(null),
+    onSaveAndUseList: saveAndUseList,
     onSelectProfile,
     onToggleRule,
     onChangeFormat,

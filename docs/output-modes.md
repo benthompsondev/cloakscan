@@ -110,6 +110,46 @@ After a scan, three panels work together:
   and a one-click switch to Portfolio-code mode is offered when that is the
   likely fix.
 
+## Completing the flow (v1.5)
+
+- **Save, use this list & rescan** — the primary action when the Cloak List
+  editor was opened from Build Portfolio Cloak List. It saves the list,
+  enables it in the active configuration, returns to Scan, and rescans the
+  same source in one step. Profile rules are strict: a built-in preset is
+  never modified — using a list while one is active forks it into the
+  session-only Unsaved configuration; a named profile updates only itself;
+  the Unsaved configuration updates in place. Nothing about this flips a
+  persistence opt-in: with Remember preferences off the list stays
+  session-only, and term values still need the per-list opt-in on top.
+  **Save list only** is always there as the quiet alternative.
+- **Compare output modes** — both sanitized versions side by side, spliced
+  from the findings the scan already produced. Opening or switching never
+  reruns detectors, and there is deliberately no "before" column — original
+  matched values never render in the comparison. Copy either version, or
+  make one the main preview. A changed-line count shows how much the modes
+  really differ; when no mapping carries a replacement, the panel says the
+  outputs are identical instead of implying magic.
+- **Portfolio Export Kit** — three files generated on click and never kept
+  in memory afterwards:
+  - `cloakscan-portfolio.ps1` — the Portfolio-code sanitized output, byte
+    for byte, nothing added.
+  - `cloakscan-findings-summary.txt` — aggregate counts only (app version,
+    output mode, detector/finding/replacement counts, category and severity
+    breakdowns, readiness state). The builder receives a counts object, not
+    findings, so no value, term, profile name, list name, or source excerpt
+    can reach the file.
+  - `cloakscan-review-checklist.md` — a fixed manual-review checklist
+    covering names, organizations, domains, hosts, paths, usernames,
+    comments, identifiers, sample data, credentials, and a parse/test pass.
+    It states plainly that automated scanning is not a guarantee.
+
+  If readiness still has open warnings, each export asks for an explicit
+  **Export anyway** first. Exporting is never presented as approval.
+- **Clear session** — removes everything ephemeral: source text, findings,
+  output, suggestions and dismissals, session terms, the pending list seed,
+  and the comparison/export panels. Saved profiles, Cloak Lists, and
+  preferences stay.
+
 ## Import and export
 
 - **.txt** — plain terms, one per line. Good for quick lists.

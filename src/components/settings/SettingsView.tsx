@@ -20,6 +20,8 @@ export interface SettingsProps {
   /** Pending "Build Portfolio Cloak List" seed from the Scan screen. */
   listSeed: CloakListSeed | null;
   onConsumeListSeed: () => void;
+  /** Save a seeded list, enable it in the active configuration, and rescan. */
+  onSaveAndUseList: (pack: CustomPack) => void;
   onSelectProfile: (id: string) => void;
   onToggleRule: (id: string, enabled: boolean) => void;
   onChangeFormat: (format: RedactionChoice) => void;

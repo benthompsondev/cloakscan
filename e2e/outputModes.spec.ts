@@ -37,7 +37,7 @@ test('a Cloak List mapping rewrites identifiers in Portfolio-code mode', async (
   await expect(page.getByRole('note', { name: 'Possible invalid code' })).toBeHidden();
 
   // And straight back.
-  await page.getByRole('button', { name: 'Safe-share' }).click();
+  await page.getByRole('button', { name: 'Safe-share', exact: true }).click();
   await expect(preview).toContainText('$[CUSTOM_TERM_1]SystemID = 4');
 });
 

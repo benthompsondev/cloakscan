@@ -181,6 +181,20 @@ export function ProfilesPacksSection(props: SettingsProps) {
           setSeedMappings(null);
           props.onConsumeListSeed();
         }}
+        // Only the seeded "Build Portfolio Cloak List" flow gets the
+        // save-and-rescan primary action; a normal editor session keeps
+        // the single Save button.
+        onSaveAndUse={
+          editingList === 'new' && seedMappings
+            ? (pack) => {
+                setNewListFromFile(null);
+                setEditingList(null);
+                setSeedMappings(null);
+                props.onConsumeListSeed();
+                props.onSaveAndUseList(pack);
+              }
+            : undefined
+        }
         onCancel={() => {
           setNewListFromFile(null);
           setEditingList(null);

@@ -4,6 +4,19 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 export type ExportResult = 'downloaded' | 'saved' | 'cancelled';
 
 /**
+ * Suggested filenames the desktop command accepts (mirrors the Rust-side
+ * allowlist in src-tauri/src/main.rs). Cloak List exports use user-derived
+ * names, which the browser path handles; on desktop they fall back to the
+ * default suggestion rather than being rejected.
+ */
+const EXPORT_SUGGESTION_ALLOWLIST = new Set([
+  'cloakscan-clean.txt',
+  'cloakscan-portfolio.ps1',
+  'cloakscan-findings-summary.txt',
+  'cloakscan-review-checklist.md',
+]);
+
+/**
  * Export text as a file.
  *
  * Browser: an in-memory Blob behind a temporary object URL, revoked right
@@ -19,7 +32,13 @@ export type ExportResult = 'downloaded' | 'saved' | 'cancelled';
  */
 export async function downloadTextFile(filename: string, text: string): Promise<ExportResult> {
   if (isTauri()) {
-    const saved = await invoke<boolean>('export_clean_text', { contents: text });
+    // The filename only selects a SUGGESTED name from the Rust-side exact
+    // allowlist; unknown names fall back to the default suggestion. The user
+    // still picks the real destination in the native dialog.
+    const saved = await invoke<boolean>('export_clean_text', {
+      contents: text,
+      filename: EXPORT_SUGGESTION_ALLOWLIST.has(filename) ? filename : undefined,
+    });
     return saved ? 'saved' : 'cancelled';
   }
   const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });

@@ -2391,3 +2391,97 @@ body {
 .mapping-strategy {
   max-width: 200px;
 }
+
+/* ---------------- v1.5: comparison + export kit ---------------- */
+
+.comparison-panel {
+  margin-top: 14px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+@media (max-width: 900px) {
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.comparison-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.comparison-pane-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.comparison-text {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-inset);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre;
+}
+
+.chip-ready {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.export-kit {
+  margin-top: 14px;
+}
+
+.export-kit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.export-kit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.export-kit-row:last-child {
+  border-bottom: none;
+}
+
+.export-kit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 320px;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.export-kit-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}

@@ -41,6 +41,17 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.5.0" date="2026-07-11">
+      <description>
+        <p>
+          Completes the portfolio workflow: save a seeded Cloak List and
+          rescan in one step, compare the two sanitized output modes side by
+          side without rescanning, and export a three-file portfolio kit
+          (sanitized script, aggregate-only findings summary, and a manual
+          review checklist). Clear session now covers all of it.
+        </p>
+      </description>
+    </release>
     <release version="1.4.1" date="2026-07-11">
       <description>
         <p>

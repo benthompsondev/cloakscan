@@ -71,6 +71,26 @@ describe('downloadTextFile on the desktop (Tauri)', () => {
     expect(tauriCore.invoke).toHaveBeenCalledTimes(1);
     expect(tauriCore.invoke).toHaveBeenCalledWith('export_clean_text', {
       contents: 'note for [CUSTOM_TERM_1]',
+      filename: 'cloakscan-clean.txt',
+    });
+  });
+
+  it('passes allowlisted kit filenames through and drops unknown ones', async () => {
+    tauriCore.isTauri.mockReturnValue(true);
+    tauriCore.invoke.mockResolvedValue(true);
+
+    await downloadTextFile('cloakscan-portfolio.ps1', 'sanitized');
+    expect(tauriCore.invoke).toHaveBeenLastCalledWith('export_clean_text', {
+      contents: 'sanitized',
+      filename: 'cloakscan-portfolio.ps1',
+    });
+
+    // Names outside the allowlist (user-derived Cloak List exports) fall
+    // back to the command's default suggestion instead of being rejected.
+    await downloadTextFile('org-names-cloak-list.txt', 'terms');
+    expect(tauriCore.invoke).toHaveBeenLastCalledWith('export_clean_text', {
+      contents: 'terms',
+      filename: undefined,
     });
   });
 

@@ -35,6 +35,29 @@ fn can_self_update() -> bool {
     )
 }
 
+/// Every filename the export command will suggest, exactly as the frontend
+/// sends it. Anything not in this list — arbitrary names, path separators,
+/// traversal, absolute paths, other extensions — is rejected before the
+/// dialog opens. The user still picks the real destination themselves.
+const EXPORT_FILENAMES: [(&str, &str, &str); 4] = [
+    ("cloakscan-clean.txt", "Text", "txt"),
+    ("cloakscan-portfolio.ps1", "PowerShell script", "ps1"),
+    ("cloakscan-findings-summary.txt", "Text", "txt"),
+    ("cloakscan-review-checklist.md", "Markdown", "md"),
+];
+
+/// Exact-match allowlist lookup: returns the (name, filter label, extension)
+/// row, or an error for anything outside the list.
+fn validate_export_filename(
+    name: &str,
+) -> Result<(&'static str, &'static str, &'static str), String> {
+    EXPORT_FILENAMES
+        .iter()
+        .find(|(allowed, _, _)| *allowed == name)
+        .copied()
+        .ok_or_else(|| "unsupported export filename".to_string())
+}
+
 /// Save the cleaned text through a native save dialog.
 ///
 /// Embedded webviews (WebView2 on Windows, WebKitGTK on Linux) do not
@@ -44,15 +67,25 @@ fn can_self_update() -> bool {
 /// Returns false when the user cancels. Never reads any file and never
 /// writes anywhere the user did not explicitly pick.
 ///
+/// The optional `filename` only selects the SUGGESTED name and extension
+/// filter, and only from the fixed allowlist above; it grants no path
+/// control whatsoever.
+///
 /// Deliberately a sync command: Tauri runs it on a worker thread, where the
 /// blocking dialog call is safe (an async command would block the runtime).
 #[tauri::command]
-fn export_clean_text(app: tauri::AppHandle, contents: String) -> Result<bool, String> {
+fn export_clean_text(
+    app: tauri::AppHandle,
+    contents: String,
+    filename: Option<String>,
+) -> Result<bool, String> {
+    let (name, label, ext) =
+        validate_export_filename(filename.as_deref().unwrap_or("cloakscan-clean.txt"))?;
     let picked = app
         .dialog()
         .file()
-        .set_file_name("cloakscan-clean.txt")
-        .add_filter("Text", &["txt"])
+        .set_file_name(name)
+        .add_filter(label, &[ext])
         .blocking_save_file();
     match picked {
         Some(path) => {
@@ -81,7 +114,45 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{can_self_update_for, write_export};
+    use super::{can_self_update_for, validate_export_filename, write_export};
+
+    #[test]
+    fn allowlisted_export_filenames_are_accepted() {
+        for name in [
+            "cloakscan-clean.txt",
+            "cloakscan-portfolio.ps1",
+            "cloakscan-findings-summary.txt",
+            "cloakscan-review-checklist.md",
+        ] {
+            let (accepted, _, ext) = validate_export_filename(name).expect(name);
+            assert_eq!(accepted, name);
+            assert!(name.ends_with(ext));
+        }
+    }
+
+    #[test]
+    fn arbitrary_and_hostile_export_filenames_are_rejected() {
+        for name in [
+            "",
+            "notes.txt",
+            "cloakscan-portfolio.exe",
+            "cloakscan-portfolio.ps1 ",
+            "CLOAKSCAN-PORTFOLIO.PS1",
+            "../cloakscan-clean.txt",
+            "..\\cloakscan-clean.txt",
+            "sub/cloakscan-clean.txt",
+            "sub\\cloakscan-clean.txt",
+            "/etc/cloakscan-clean.txt",
+            "C:\\Windows\\cloakscan-clean.txt",
+            "cloakscan-clean.txt/..",
+            "cloakscan-clean.txt\u{0000}",
+        ] {
+            assert!(
+                validate_export_filename(name).is_err(),
+                "must reject {name:?}"
+            );
+        }
+    }
 
     fn temp_file(name: &str) -> std::path::PathBuf {
         std::env::temp_dir().join(format!("cloakscan-test-{}-{name}", std::process::id()))

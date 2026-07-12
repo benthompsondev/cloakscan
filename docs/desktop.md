@@ -3,7 +3,7 @@
 > Looking for Linux? The `.deb` / AppImage guide is [docs/linux.md](linux.md).
 
 CloakScan ships to Windows users as **one setup executable**:
-`release/windows/CloakScan-Setup-1.4.1-x64.exe`. Download it, run it, and
+`release/windows/CloakScan-Setup-1.5.0-x64.exe`. Download it, run it, and
 launch CloakScan from the Start Menu. No Node, npm, Rust, source folders,
 manual dependencies, or internet access are needed — the installer even
 bundles the WebView2 runtime installer, so installation itself works offline
@@ -61,7 +61,11 @@ cargo-audit is not installed on this machine.
 
 - The Rust side is small on purpose. Exactly **two app-specific commands**
   exist. `export_clean_text` opens a native save dialog and writes the
-  sanitized text only to the path the user picked. `can_self_update` returns
+  sanitized text only to the path the user picked; its optional suggested
+  filename comes from an exact four-name allowlist (`cloakscan-clean.txt`
+  plus the three Portfolio Export Kit files), so path separators,
+  traversal, absolute paths, and other extensions are rejected before the
+  dialog even opens. `can_self_update` returns
   one Boolean so the Linux UI can distinguish an AppImage from a `.deb`; it
   never exposes environment values. The app cannot read arbitrary files and
   cannot write anywhere the user did not explicitly choose.

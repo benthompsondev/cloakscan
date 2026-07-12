@@ -2,6 +2,24 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.0] - 2026-07-11
+
+### Added
+
+- **Save, use this list & rescan.** When the Cloak List editor opens from Build Portfolio Cloak List, the primary action now saves the list, enables it in the active configuration, returns to Scan, and rescans the same source in one step, with an aggregate-count confirmation. A built-in profile forks into the session-only Unsaved configuration (built-in presets are never modified); a named profile updates only itself; the Unsaved configuration updates in place. **Save list only** keeps the old behavior. The transition is computed by pure helpers and the rescan uses those computed values directly, so the new configuration always applies on the very first rescan.
+- **Compare output modes.** A compact panel after each scan shows the Safe-share and Portfolio-code outputs side by side, generated from the findings the scan already produced — opening or switching never reruns detectors, and only sanitized text is shown (no "before" view, ever). Copy either version, switch the main preview, and see how many lines actually differ.
+- **Portfolio Export Kit.** Three files, each generated on click and never stored: `cloakscan-portfolio.ps1` (the Portfolio-code sanitized output, nothing else), `cloakscan-findings-summary.txt` (app version, output mode, and aggregate counts by category/severity/readiness — the builder receives counts only, so no code path can put a value, term, name, or source excerpt in it), and `cloakscan-review-checklist.md` (a fixed manual-review checklist that states plainly that automated scanning is not a guarantee). When readiness still has warnings, exporting requires an explicit **Export anyway** — never presented as a sign-off.
+
+### Changed
+
+- **Clear session** now also covers the v1.5 surfaces: the pending Cloak List seed, the comparison panel, and export confirmations, alongside source text, findings, output, suggestions, dismissals, session terms, and notices. Remembered profiles, Cloak Lists, and preferences are untouched.
+- The desktop export command accepts a suggested filename — but only from an exact four-name allowlist (`cloakscan-clean.txt` plus the three kit files). Arbitrary names, other extensions, path separators, traversal, and absolute paths are rejected before the dialog opens; the user still picks the real destination in the native save dialog, and no new filesystem capability was added.
+
+### Safety
+
+- No new storage key and no change to the preference schema: nothing from the comparison or export kit is ever persisted, and mapping terms still need both the global Remember preferences opt-in and the per-list save-terms opt-in. Saving a list through the new flow never flips either opt-in.
+- Secrets, credentials, emails, URLs, hosts, IPs, GUIDs, paths, and connection strings stay bracket placeholders in Portfolio-code output and in both comparison panes, locked in by tests.
+
 ## [1.4.1] - 2026-07-11
 
 ### Fixed

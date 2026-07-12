@@ -32,7 +32,9 @@ Later layers add or override the earlier configuration. They do not replace the 
 
 ## Privacy model
 
-Source text, filenames, findings, cleaned output, and session-only terms stay in memory. Closing or refreshing the app clears them.
+Source text, filenames, findings, cleaned output, and session-only terms stay in memory. Closing or refreshing the app clears them, and **Clear session** does the same on demand — including suggestions, dismissals, the pending Cloak List seed, and the comparison and export panels.
+
+The output-mode comparison (`src/lib/comparison.ts`) and the Portfolio Export Kit (`src/lib/portfolioExport.ts`) follow the same rule. The comparison splices both sanitized versions from findings the scan already produced — no rescan, no original values in any field. The export summary builder receives an aggregates object (counts and mode/version strings), never findings, so exported metadata cannot contain a matched value, term, configuration name, or source excerpt. Export files are generated at click time and handed straight to the download path, never held in state.
 
 Preference storage is off by default. If the user enables it, CloakScan writes one narrow `localStorage` key containing allowlisted configuration. It never stores scan content, findings, or output. There is no scan history by design because cleaned text can still contain something a rule missed.
 
@@ -40,7 +42,7 @@ The production build has a strict Content Security Policy. Outbound browser conn
 
 ## Desktop boundary
 
-The desktop app uses a Tauri 2 shell around the same client-side interface, on Windows (WebView2) and Linux x86_64 (WebKitGTK). Its only app-specific Rust commands export cleaned text to a user-approved path and report whether the current package can update itself. Scanning and redaction still happen in the React app.
+The desktop app uses a Tauri 2 shell around the same client-side interface, on Windows (WebView2) and Linux x86_64 (WebKitGTK). Its only app-specific Rust commands export cleaned text to a user-approved path and report whether the current package can update itself. The export command accepts a suggested filename, but only from an exact allowlist (`cloakscan-clean.txt` and the three Portfolio Export Kit names) — anything else, including path separators, traversal, or other extensions, is rejected before the dialog opens, and the user still picks the real destination. Scanning and redaction still happen in the React app.
 
 Project links use Tauri's opener plugin because ordinary external anchors do not reliably leave an embedded webview. The capability permits only CloakScan's GitHub repository and GitHub Pages demo. It cannot open arbitrary sites or local files.
 

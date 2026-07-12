@@ -96,7 +96,9 @@ test('bulk candidate selection builds a pre-filled Portfolio Cloak List', async 
   // Every seeded row uses the code-only strategy and can be saved as-is.
   await expect(contosoRow.getByLabel('Mapping replacement strategy')).toHaveValue('code-only');
   await expect(nwrhRow.getByLabel('Mapping replacement strategy')).toHaveValue('code-only');
-  await page.getByRole('button', { name: 'Save Cloak List' }).click();
+  // The seeded editor offers save-and-rescan as primary; plain save remains.
+  await expect(page.getByRole('button', { name: 'Save, use this list & rescan' })).toBeVisible();
+  await page.getByRole('button', { name: 'Save list only' }).click();
   await expect(
     page.getByRole('region', { name: 'Profiles and packs' }).getByText('Portfolio Cloak List'),
   ).toBeVisible();

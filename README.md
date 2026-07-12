@@ -31,7 +31,7 @@ It is smaller and more focused than a full DLP platform or repository secret sca
 
 ### Windows
 
-Download `CloakScan-Setup-1.4.1-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakscan/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
+Download `CloakScan-Setup-1.5.0-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakscan/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
 
 The installer is currently unsigned, so Windows SmartScreen may show a warning. Verify the published SHA-256 checksum before running it.
 
@@ -43,7 +43,7 @@ For Debian 12, Ubuntu 22.04, or newer, install the `.deb`:
 
 ```bash
 cd ~/Downloads
-sudo apt install ./CloakScan_1.4.1_amd64.deb
+sudo apt install ./CloakScan_1.5.0_amd64.deb
 ```
 
 Launch it from your applications menu or run:
@@ -56,8 +56,8 @@ The AppImage is portable and does not install anything:
 
 ```bash
 cd ~/Downloads
-chmod +x CloakScan_1.4.1_amd64.AppImage
-./CloakScan_1.4.1_amd64.AppImage
+chmod +x CloakScan_1.5.0_amd64.AppImage
+./CloakScan_1.5.0_amd64.AppImage
 ```
 
 See [the Linux guide](docs/linux.md) for updates, uninstall steps, and troubleshooting.
@@ -97,11 +97,13 @@ npm run verify    # audit + lint + unit tests + build + e2e, all in one
 1. Paste text, import a text/log/code/config file (read in memory, max 2 MB; UTF-8 and UTF-16 PowerShell files both decode correctly), or use **Load sample** for one synthetic incident that covers secrets, infrastructure, and labeled personal data.
 2. Click **Scan locally**. CloakScan has 49 focused detectors covering common secrets, credentials, network details, ports, file paths, cloud identifiers, personal data, regional formats, and IT automation fingerprints (AD groups, directory attributes, Exchange and credential workflow terms — most of those are review leads that point without rewriting). Its API-key detector recognizes 33 distinctive provider, webhook, and signed-URL patterns without guessing from entropy, including AWS long-term and temporary access-key IDs. Balanced handles everyday scans. Strict adds contextual personal information. Maximum adds every country pack. Code & secrets leaves prose PII off. See [Detector behavior and safety](docs/detectors.md) for the full list and known limits.
 3. Use **Hide custom terms** for exact names, domains, hostnames, project names, or other values the built-in rules cannot know. These terms last for the current session only. You can give them their own placeholder label and format. For reusable terms, create a **Cloak List** under Settings > Profiles & Packs. Cloak Lists export/import as `.txt` (terms only) or `.json` (terms plus mappings and options), and support **mappings** — term → generic replacement pairs for cleaning code.
-4. Review **Possible names & terms to review**. These are guesses only. Nothing is hidden until you choose **Hide this session** or add the term to a reusable Cloak List. Likely terms come with a suggested generic replacement, and you can select several and **Build Portfolio Cloak List** to open the editor pre-filled with ready-to-edit mappings. Well-known product phrases are tagged *common term* and sorted last.
+4. Review **Possible names & terms to review**. These are guesses only. Nothing is hidden until you choose **Hide this session** or add the term to a reusable Cloak List. Likely terms come with a suggested generic replacement, and you can select several and **Build Portfolio Cloak List** to open the editor pre-filled with ready-to-edit mappings. Well-known product phrases are tagged *common term* and sorted last. From the seeded editor, **Save, use this list & rescan** saves the list, enables it, brings you back to Scan, and rescans the same text in one step — a built-in profile forks into the session-only Unsaved configuration (built-ins are never changed), a named profile updates only itself. **Save list only** just saves.
 5. Review the findings. Each one shows its category, severity, a masked preview, and the replacement placeholder. Toggle off anything you want to keep. **Review leads** start unchecked — they point at IT-automation fingerprints worth a look without rewriting anything.
 6. Pick an output mode: **Safe-share** (bracket placeholders, the default) or **Portfolio-code** (mapped terms inside variable/function/property/command names become valid generic identifiers, so PowerShell headed for a public repo still reads as code). The mode is independent of the detection profile and also lives in Settings → General. Each mapping picks a replacement strategy: code identifiers only, genericize everywhere, placeholder, or review lead only. See [Output modes and Cloak List mappings](docs/output-modes.md).
 7. Check the **Sanitization readiness** summary: findings you kept as-is (any severity - the original value stays in the output), unreviewed review leads, suggestions you have not handled, and invalid-code warnings, in one place. It is guidance, not a guarantee.
-8. Copy the cleaned output or download it as a `.txt` file. Formatting is preserved, and repeated values reuse the same placeholder. If a placeholder landed somewhere that breaks code, a warning panel says so, links to the line, and offers the Portfolio-code switch when that is the likely fix.
+8. Open **Compare output modes** to see the two sanitized versions side by side — same findings, no rescan, sanitized text only (there is deliberately no "before" column). Copy either version or switch the main preview from there. A changed-line count says how much the modes actually differ.
+9. Copy the cleaned output or download it as a `.txt` file. Formatting is preserved, and repeated values reuse the same placeholder. If a placeholder landed somewhere that breaks code, a warning panel says so, links to the line, and offers the Portfolio-code switch when that is the likely fix.
+10. Use the **Portfolio Export Kit** to export three files next to the sanitized script: `cloakscan-portfolio.ps1` (the Portfolio-code output, nothing else), `cloakscan-findings-summary.txt` (aggregate counts only — no values, no names, no source text), and `cloakscan-review-checklist.md` (a fixed manual-review checklist). If readiness still has warnings, exporting takes an explicit **Export anyway** — it is never a sign-off. **Clear session** wipes everything ephemeral: source, findings, output, suggestions, session terms, the pending list seed, and the comparison/export panels. Saved profiles, Cloak Lists, and preferences stay.
 
 ## How it works
 
@@ -139,7 +141,7 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Project status
 
-Current release: **v1.4.1**
+Current release: **v1.5.0**
 
 - The Portfolio Review Workspace ties the cleanup flow together: mapping suggestions, bulk actions, a Build Portfolio Cloak List flow, and a sanitization readiness summary.
 - Cloak List mappings pick a replacement strategy: code identifiers only, genericize everywhere, placeholder, or review lead only. Lists exported by 1.3 keep their old behavior on import.

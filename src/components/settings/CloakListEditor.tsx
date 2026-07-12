@@ -43,6 +43,12 @@ interface CloakListEditorProps {
   /** Pre-filled mapping rows (the Build Portfolio Cloak List flow). */
   initialMappings?: CloakMappingEntry[];
   onSave: (pack: CustomPack) => void;
+  /**
+   * When set (the editor was opened from "Build Portfolio Cloak List"), the
+   * primary action becomes "Save, use this list & rescan" and onSave demotes
+   * to "Save list only".
+   */
+  onSaveAndUse?: (pack: CustomPack) => void;
   onCancel: () => void;
 }
 
@@ -58,6 +64,7 @@ export function CloakListEditor({
   initialTermsText = '',
   initialMappings,
   onSave,
+  onSaveAndUse,
   onCancel,
 }: CloakListEditorProps) {
   const importInput = useRef<HTMLInputElement>(null);
@@ -141,16 +148,17 @@ export function CloakListEditor({
     }),
   );
 
-  const save = () =>
-    onSave({
-      ...draft,
-      name: draft.name.trim(),
-      terms: {
-        ...draft.terms,
-        values: analysis.terms,
-        mappings: startedMappings.filter((m) => validateMappingEntry(m) === null),
-      },
-    });
+  const buildPack = (): CustomPack => ({
+    ...draft,
+    name: draft.name.trim(),
+    terms: {
+      ...draft.terms,
+      values: analysis.terms,
+      mappings: startedMappings.filter((m) => validateMappingEntry(m) === null),
+    },
+  });
+
+  const save = () => onSave(buildPack());
 
   const importTermsFile = async (file: File) => {
     if (!file.name.toLocaleLowerCase().endsWith('.txt')) {
@@ -193,9 +201,25 @@ export function CloakListEditor({
           <button type="button" className="btn btn-ghost" onClick={onCancel}>
             Cancel
           </button>
-          <button type="button" className="btn btn-primary" disabled={!canSave} onClick={save}>
-            Save Cloak List
-          </button>
+          {onSaveAndUse ? (
+            <>
+              <button type="button" className="btn btn-ghost" disabled={!canSave} onClick={save}>
+                Save list only
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!canSave}
+                onClick={() => onSaveAndUse(buildPack())}
+              >
+                Save, use this list & rescan
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn btn-primary" disabled={!canSave} onClick={save}>
+              Save Cloak List
+            </button>
+          )}
         </div>
       </div>
       <div className="settings-body">

@@ -18,6 +18,8 @@ import { ScanSummary } from './ScanSummary';
 import { PrivateTermsDialog } from './PrivateTermsDialog';
 import { CandidatePanel } from './CandidatePanel';
 import { ReadinessSummary } from './ReadinessSummary';
+import { ComparisonPanel } from './ComparisonPanel';
+import { ExportKitPanel } from './ExportKitPanel';
 
 interface ScanViewProps {
   session: SessionState;
@@ -223,37 +225,52 @@ export function ScanView({
         />
       </div>
 
-      {session.hasScanned && (
-        <>
-          <ReadinessSummary
-            report={assessReadiness({
-              findings: effectiveFindings,
-              candidates,
-              codeWarnings,
-              outputMode: session.outputMode,
-            })}
-            outputMode={session.outputMode}
-          />
-          <div className="results">
-            <FindingsPanel groups={groups} onToggleGroup={onToggleGroup} />
-            <ScanSummary
-              startedAt={scanMeta?.startedAt ?? null}
-              durationMs={scanMeta?.durationMs ?? null}
-              ruleCount={enabledCount}
-              itemsDetected={session.findings.length}
-              redactionsApplied={session.findings.filter((f) => f.enabled).length}
-            />
-          </div>
-          {candidates.length > 0 && (
-            <CandidatePanel
-              candidates={candidates}
-              onHideCandidate={onHideCandidate}
-              onDismissCandidate={onDismissCandidate}
-              onBuildCloakList={onBuildCloakList}
-            />
-          )}
-        </>
-      )}
+      {session.hasScanned &&
+        (() => {
+          const readinessReport = assessReadiness({
+            findings: effectiveFindings,
+            candidates,
+            codeWarnings,
+            outputMode: session.outputMode,
+          });
+          return (
+            <>
+              <ReadinessSummary report={readinessReport} outputMode={session.outputMode} />
+              <div className="results">
+                <FindingsPanel groups={groups} onToggleGroup={onToggleGroup} />
+                <ScanSummary
+                  startedAt={scanMeta?.startedAt ?? null}
+                  durationMs={scanMeta?.durationMs ?? null}
+                  ruleCount={enabledCount}
+                  itemsDetected={session.findings.length}
+                  redactionsApplied={session.findings.filter((f) => f.enabled).length}
+                />
+              </div>
+              {candidates.length > 0 && (
+                <CandidatePanel
+                  candidates={candidates}
+                  onHideCandidate={onHideCandidate}
+                  onDismissCandidate={onDismissCandidate}
+                  onBuildCloakList={onBuildCloakList}
+                />
+              )}
+              <ComparisonPanel
+                sourceText={session.sourceText}
+                findings={session.findings}
+                outputMode={session.outputMode}
+                onSetOutputMode={onSetOutputMode}
+                onNotice={onNotice}
+              />
+              <ExportKitPanel
+                sourceText={session.sourceText}
+                findings={session.findings}
+                outputMode={session.outputMode}
+                readiness={readinessReport}
+                onNotice={onNotice}
+              />
+            </>
+          );
+        })()}
 
       <PrivateTermsDialog
         open={termsOpen}
