@@ -37,13 +37,22 @@ describe('AboutView updater visibility', () => {
 
 describe('public demo media', () => {
   it('ships a correctly sized social card and points the page metadata at it', () => {
-    const card = readFileSync(join(root, 'docs', 'media', 'social-card.png'));
+    const sourceCard = readFileSync(join(root, 'docs', 'media', 'social-card.png'));
+    const card = readFileSync(join(root, 'public', 'social-card.png'));
+    expect(card.equals(sourceCard)).toBe(true);
     expect(card.subarray(1, 4).toString('ascii')).toBe('PNG');
     expect(card.readUInt32BE(16)).toBe(1280);
     expect(card.readUInt32BE(20)).toBe(640);
 
     const index = readFileSync(join(root, 'index.html'), 'utf8');
-    expect(index).toContain('docs/media/social-card.png');
+    const normalizedIndex = index.replace(/\s+/g, ' ');
+    const socialCardUrl = 'https://benthompsondev.github.io/cloakscan/social-card.png';
+    expect(normalizedIndex).toContain(
+      `property="og:image" content="${socialCardUrl}"`,
+    );
+    expect(normalizedIndex).toContain(
+      `name="twitter:image" content="${socialCardUrl}"`,
+    );
     expect(index).toContain('property="og:image:width" content="1280"');
     expect(index).toContain('property="og:image:height" content="640"');
     expect(index).toContain('name="theme-color" content="#0d1112"');
