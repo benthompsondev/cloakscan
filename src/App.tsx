@@ -42,6 +42,7 @@ import { DemoBanner } from './components/DemoBanner';
 import { ScanView } from './components/ScanView';
 import { SettingsView } from './components/settings/SettingsView';
 import { AboutView } from './components/AboutView';
+import { ExternalLink } from './components/ExternalLink';
 
 export interface Notice {
   kind: 'ok' | 'err';
@@ -634,6 +635,9 @@ export default function App() {
       <footer className="footer">
         <span className="footer-dot" aria-hidden="true" />
         <span>Automated detection can miss sensitive information. Review before sharing.</span>
+        <ExternalLink className="footer-author" href="https://benthompsondev.github.io/">
+          Built by Ben Thompson · @benthompsondev
+        </ExternalLink>
       </footer>
     </div>
   );
