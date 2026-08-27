@@ -261,6 +261,22 @@ test('custom terms to hide are redacted and cleared with the session', async ({ 
   await expect(page.getByLabel('Source text input')).toHaveValue('');
 });
 
+test('maximum redacts basic unquoted password and API-key assignments', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('combobox', { name: 'Detection profile' }).selectOption('maximum');
+  await page
+    .getByRole('textbox', { name: 'Source text input' })
+    .fill('User=Admin Password=password Api_key=A1cdeFgh795=');
+  await page.getByRole('button', { name: 'Scan locally' }).click();
+
+  const preview = page.getByRole('region', { name: 'Redacted preview' });
+  await expect(preview).toContainText(
+    'User=[USERNAME_1] Password=[SECRET_1] Api_key=[SECRET_2]',
+  );
+  await expect(preview).not.toContainText('Password=password');
+  await expect(preview).not.toContainText('A1cdeFgh795=');
+});
+
 test('rejects unsupported file types with feedback', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Import a text file').setInputFiles({

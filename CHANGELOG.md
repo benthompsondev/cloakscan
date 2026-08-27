@@ -2,6 +2,19 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.1] - 2026-08-27
+
+### Fixed
+
+- Password, API-key, token, credential, and secret fields now redact quoted and unquoted same-line literals in common assignment, environment-file, YAML, JSON, CLI, and simple XML shapes. This includes `Password=password`, `Api_key=A1cdeFgh795=`, and provider-prefixed field names such as `OPENAI_API_KEY`.
+- Symbol-leading literal passwords are no longer mistaken for already-redacted placeholders.
+- The readiness all-clear now says **No flagged items**, which describes what the scan found without implying that automated detection proved the output safe.
+
+### Safety
+
+- Variables, generated password commands, expressions, Boolean/config values, and existing placeholders remain untouched. Provider-specific API-key rules still win overlaps, and CloakScan still does not guess secrets from entropy alone.
+- Added direct detector and browser regressions for the public failure that prompted this correction.
+
 ## [1.5.0] - 2026-07-11
 
 ### Added

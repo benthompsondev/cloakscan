@@ -20,14 +20,14 @@ export function ReadinessSummary({ report, outputMode }: ReadinessSummaryProps) 
         <div className="panel-title">
           <h2>Sanitization readiness</h2>
           <span className={`chip ${report.status === 'ready' ? 'chip-ready' : 'chip-review'}`}>
-            {report.status === 'ready' ? 'No open items' : `${report.items.length} to review`}
+            {report.status === 'ready' ? 'No flagged items' : `${report.items.length} to review`}
           </span>
         </div>
       </div>
       {report.status === 'ready' ? (
         <p className="muted readiness-note">
-          Nothing from this scan is left open. Automated detection can still miss things — give
-          the output one last read before sharing.
+          No detected findings or review items remain. Automated detection is not a guarantee —
+          give the output one last read before sharing.
         </p>
       ) : (
         <ul className="readiness-items">

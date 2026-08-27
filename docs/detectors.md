@@ -10,11 +10,11 @@ text before sharing it.
   `Select-String -Pattern`, common `[regex]::Match`/`Matches`/`Replace` calls,
   and ordinary `switch -Regex` cases are protected before detectors run. This
   prevents ticket-like fragments and character classes from being rewritten.
-- Password and secret assignments are replaced automatically only when the
-  right-hand side is a quoted inline literal. Variables, command calls, and
-  expressions such as `Generate-Password`, `$existingPassword`, or
-  `(Get-RandomPassword)` are executable code, not pasted secrets, and remain
-  unchanged.
+- Password and secret fields redact quoted and unquoted same-line literals in
+  common assignment, JSON, YAML, environment-file, CLI, and simple XML shapes.
+  Variables, command calls, and expressions such as `Generate-Password`,
+  `$existingPassword`, or `(Get-RandomPassword)` are executable code, not
+  pasted secrets, and remain unchanged.
 - Username detection is intentionally conservative. It uses explicit labels
   such as `Username`, `SamAccountName`, and `UPN`, plus a small set of cmdlets
   where `-Identity` clearly means a user/account. Generic `-Identity`,
@@ -168,9 +168,10 @@ text before sharing it.
 - Generic Jira-style IDs require a two-or-more-letter prefix, a hyphen, and at
   least two digits. They can still overlap with harmless product identifiers,
   so they remain medium-confidence findings.
-- Contextual infrastructure and secret assignment rules only replace quoted
-  literals. Values assembled from variables or expressions are left alone to
-  preserve code semantics.
+- Contextual secret assignment matching is same-line and syntax-aware, not a
+  full parser for every configuration language. Multiline or dynamically
+  assembled values can still require manual review. Variables and expressions
+  are left alone to preserve code semantics.
 - Strict detects names and organizations in explicit fields (INI, YAML,
   PowerShell assignments and hashtables, and quoted JSON keys such as
   `"displayName"` or `"companyName"`), recognized CSV columns under a plausible

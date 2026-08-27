@@ -38,7 +38,7 @@ test('readiness summary reports open items and settles when handled', async ({ p
 
   // Dismissing the suggestion clears the item.
   await page.getByRole('button', { name: 'Dismiss Contoso Health' }).click();
-  await expect(readiness).toContainText('No open items');
+  await expect(readiness).toContainText('No flagged items');
 });
 
 test('keeping a medium-severity finding as-is keeps readiness open', async ({ page }) => {
@@ -48,17 +48,17 @@ test('keeping a medium-severity finding as-is keeps readiness open', async ({ pa
   await page.getByRole('button', { name: 'Scan locally' }).click();
 
   const readiness = page.getByRole('region', { name: 'Sanitization readiness' });
-  await expect(readiness).toContainText('No open items');
+  await expect(readiness).toContainText('No flagged items');
 
   // Keep the finding as-is — the original value ships, so readiness must reopen.
   await page.getByLabel(/Redact IPv4 address/).uncheck();
   await expect(readiness).toContainText('to review');
   await expect(readiness).toContainText('1 medium');
-  await expect(readiness).not.toContainText('No open items');
+  await expect(readiness).not.toContainText('No flagged items');
 
   // Redacting it again settles the summary.
   await page.getByLabel(/Redact IPv4 address/).check();
-  await expect(readiness).toContainText('No open items');
+  await expect(readiness).toContainText('No flagged items');
 });
 
 test('bulk candidate selection builds a pre-filled Portfolio Cloak List', async ({ page }) => {

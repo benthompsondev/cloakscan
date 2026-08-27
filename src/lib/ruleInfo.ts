@@ -55,7 +55,7 @@ export const RULE_INFO: Record<string, RuleInfo> = {
   },
   'secret-assignment': {
     detects: 'Values assigned to password/secret-style keys, including compound names like $SmtpUserPass.',
-    falsePositives: 'Variables named around "pass" with plain-word values, e.g. $BypassCode = "always".',
+    falsePositives: 'Plain-word examples in sensitive fields can match; variables, expressions, and commands are skipped.',
     confidence: 'Medium — context-based; booleans, variables, and cmdlets are filtered out.',
     sample: 'password = "demo-horse-battery-not-real"',
   },

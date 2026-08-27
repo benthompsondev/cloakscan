@@ -7,9 +7,9 @@ A local-first tool for cleaning sensitive details out of scripts, logs, prompts,
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **[▶ Try the live demo](https://benthompsondev.github.io/cloakscan/)** — in your browser, nothing uploaded ·
-**[⬇ Download v1.5.0](https://github.com/benthompsondev/cloakscan/releases/latest)** — Windows setup / Linux AppImage / `.deb` ·
+**[⬇ Download v1.5.1](https://github.com/benthompsondev/cloakscan/releases/latest)** — Windows setup / Linux AppImage / `.deb` ·
 **[See a before & after](#what-the-output-looks-like)** ·
-**[Release notes](https://github.com/benthompsondev/cloakscan/releases/tag/v1.5.0)**
+**[Release notes](https://github.com/benthompsondev/cloakscan/releases/tag/v1.5.1)**
 
 ![CloakScan demo: load a synthetic sample, scan locally, build a Cloak List from suggestions, rescan, compare output modes, and open the export kit](docs/media/cloakscan-demo.gif)
 
@@ -73,7 +73,7 @@ Found something it missed? [Report a detector gap](https://github.com/benthompso
 
 ### Windows
 
-Download `CloakScan-Setup-1.5.0-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakscan/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
+Download `CloakScan-Setup-1.5.1-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakscan/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
 
 The installer is currently unsigned, so Windows SmartScreen may show a warning. Verify the published SHA-256 checksum before running it.
 
@@ -85,7 +85,7 @@ For Debian 12, Ubuntu 22.04, or newer, install the `.deb`:
 
 ```bash
 cd ~/Downloads
-sudo apt install ./CloakScan_1.5.0_amd64.deb
+sudo apt install ./CloakScan_1.5.1_amd64.deb
 ```
 
 Launch it from your applications menu or run:
@@ -98,8 +98,8 @@ The AppImage is portable and does not install anything:
 
 ```bash
 cd ~/Downloads
-chmod +x CloakScan_1.5.0_amd64.AppImage
-./CloakScan_1.5.0_amd64.AppImage
+chmod +x CloakScan_1.5.1_amd64.AppImage
+./CloakScan_1.5.1_amd64.AppImage
 ```
 
 See [the Linux guide](docs/linux.md) for updates, uninstall steps, and troubleshooting.
@@ -137,7 +137,7 @@ npm run verify    # audit + lint + unit tests + build + e2e, all in one
 ## What it does
 
 1. Paste text, import a text/log/code/config file (read in memory, max 2 MB; UTF-8 and UTF-16 PowerShell files both decode correctly), or use **Load sample** for one synthetic incident that covers secrets, infrastructure, and labeled personal data.
-2. Click **Scan locally**. CloakScan has 49 focused detectors covering common secrets, credentials, network details, ports, file paths, cloud identifiers, personal data, regional formats, and IT automation fingerprints (AD groups, directory attributes, Exchange and credential workflow terms — most of those are review leads that point without rewriting). Its API-key detector recognizes 33 distinctive provider, webhook, and signed-URL patterns without guessing from entropy, including AWS long-term and temporary access-key IDs. Balanced handles everyday scans. Strict adds contextual personal information. Maximum adds every country pack. Code & secrets leaves prose PII off. See [Detector behavior and safety](docs/detectors.md) for the full list and known limits.
+2. Click **Scan locally**. CloakScan has 49 focused detectors covering common secrets, credentials, network details, ports, file paths, cloud identifiers, personal data, regional formats, and IT automation fingerprints (AD groups, directory attributes, Exchange and credential workflow terms — most of those are review leads that point without rewriting). Contextual secret fields catch quoted and unquoted literals in common config and command shapes, while variables and generated expressions stay untouched. Its API-key detector also recognizes 33 distinctive provider, webhook, and signed-URL patterns without guessing from entropy, including AWS long-term and temporary access-key IDs. Balanced handles everyday scans. Strict adds contextual personal information. Maximum adds every country pack. Code & secrets leaves prose PII off. See [Detector behavior and safety](docs/detectors.md) for the full list and known limits.
 3. Use **Hide custom terms** for exact names, domains, hostnames, project names, or other values the built-in rules cannot know. These terms last for the current session only. You can give them their own placeholder label and format. For reusable terms, create a **Cloak List** under Settings > Profiles & Packs. Cloak Lists export/import as `.txt` (terms only) or `.json` (terms plus mappings and options), and support **mappings** — term → generic replacement pairs for cleaning code.
 4. Review **Possible names & terms to review**. These are guesses only. Nothing is hidden until you choose **Hide this session** or add the term to a reusable Cloak List. Likely terms come with a suggested generic replacement, and you can select several and **Build Portfolio Cloak List** to open the editor pre-filled with ready-to-edit mappings. Well-known product phrases are tagged *common term* and sorted last. From the seeded editor, **Save, use this list & rescan** saves the list, enables it, brings you back to Scan, and rescans the same text in one step — a built-in profile forks into the session-only Unsaved configuration (built-ins are never changed), a named profile updates only itself. **Save list only** just saves.
 5. Review the findings. Each one shows its category, severity, a masked preview, and the replacement placeholder. Toggle off anything you want to keep. **Review leads** start unchecked — they point at IT-automation fingerprints worth a look without rewriting anything.
@@ -183,7 +183,7 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Project status
 
-Current release: **v1.5.0**
+Current release: **v1.5.1**
 
 - The Portfolio Review Workspace ties the cleanup flow together: mapping suggestions, bulk actions, a Build Portfolio Cloak List flow, and a sanitization readiness summary.
 - Cloak List mappings pick a replacement strategy: code identifiers only, genericize everywhere, placeholder, or review lead only. Lists exported by 1.3 keep their old behavior on import.
