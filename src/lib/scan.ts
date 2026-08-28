@@ -52,11 +52,82 @@ export function resolveOverlaps(candidates: Candidate[]): Candidate[] {
       b.end - b.start - (a.end - a.start) ||
       a.start - b.start,
   );
+  // Kept ranges never overlap each other and are held in start order, so only
+  // the two neighbours around the insertion point can conflict. Scanning the
+  // whole list instead made a dense 2 MB import quadratic.
   const kept: Candidate[] = [];
   for (const candidate of ranked) {
-    if (!kept.some((k) => overlaps(k, candidate))) kept.push(candidate);
+    let low = 0;
+    let high = kept.length;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (kept[mid].start < candidate.start) low = mid + 1;
+      else high = mid;
+    }
+    const before = kept[low - 1];
+    const after = kept[low];
+    if (before && overlaps(before, candidate)) continue;
+    if (after && overlaps(after, candidate)) continue;
+    kept.splice(low, 0, candidate);
   }
-  return kept.sort((a, b) => a.start - b.start);
+  return kept;
+}
+
+/**
+ * Give every same-category candidate in a run of overlapping matches the full
+ * span of that run.
+ *
+ * Overlap resolution keeps exactly one candidate per region, so the losers'
+ * uncovered ends stay in the output. That is partial redaction:
+ * `api_key=sk-...tail` rendered as `api_key=[API_KEY_1]tail`, and
+ * `Password=hunter2 and AKIA...` redacted only the AWS key while leaving
+ * `hunter2` visible. Equalizing the ranges first means the specific detector
+ * still wins on priority — it just covers the whole credential.
+ *
+ * Growing only the *contained* candidates is not enough, because the winner
+ * may be a container rather than the contained match: with `[0,105]` and
+ * `[10,110]` overlapping, a win by `[0,105]` left `[105,110)` visible. Merging
+ * the whole run is what actually holds the invariant.
+ *
+ * Same category only: a hostname inside a path is a different question, and
+ * widening across categories would relabel findings misleadingly.
+ */
+function coverContainingMatches(text: string, candidates: Candidate[]): Candidate[] {
+  const byCategory = new Map<string, Candidate[]>();
+  for (const candidate of candidates) {
+    const category = candidate.category ?? candidate.detector.category;
+    const bucket = byCategory.get(category);
+    if (bucket) bucket.push(candidate);
+    else byCategory.set(category, [candidate]);
+  }
+
+  const grown = new Map<Candidate, Candidate>();
+  for (const bucket of byCategory.values()) {
+    const ordered = [...bucket].sort((a, b) => a.start - b.start || b.end - a.end);
+    let run: Candidate[] = [];
+    let start = 0;
+    let end = -1;
+    const flush = () => {
+      if (run.length < 2) return;
+      for (const member of run) {
+        if (member.start === start && member.end === end) continue;
+        grown.set(member, { ...member, start, end, value: text.slice(start, end) });
+      }
+    };
+    for (const candidate of ordered) {
+      if (candidate.start < end) {
+        end = Math.max(end, candidate.end);
+        run.push(candidate);
+        continue;
+      }
+      flush();
+      run = [candidate];
+      start = candidate.start;
+      end = candidate.end;
+    }
+    flush();
+  }
+  return grown.size === 0 ? candidates : candidates.map((c) => grown.get(c) ?? c);
 }
 
 /**
@@ -87,7 +158,7 @@ export function scanText(text: string, options: ScanOptions = {}): Finding[] {
   const candidates: Candidate[] = activeDetectors
     .flatMap((detector) => detector.detect(text).map((match) => ({ ...match, detector })))
     .filter((candidate) => !protectedRanges.some((range) => overlaps(candidate, range)));
-  const resolved = resolveOverlaps(candidates);
+  const resolved = resolveOverlaps(coverContainingMatches(text, candidates));
 
   const counters = new Map<string, number>();
   const placeholderByValue = new Map<string, string>();

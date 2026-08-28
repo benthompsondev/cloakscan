@@ -85,14 +85,14 @@ describe('contextual secret assignments', () => {
     'password = & Get-Secret',
     'password = &\'Get-Secret\'',
     'password = .\\GetSecret.ps1',
-    'password = [string] "literal"',
+    // A cast over a *literal* is now detected — see secretGaps.test.ts. A cast
+    // over an expression still is not, because there is nothing pasted to hide.
     "password = [char[]]('a','b')",
     'password = (GetPassword)',
     'password = GetPassword -Arg foo',
     'password = "prefix-$user"',
     'password = prefix-$user',
     '$Password = password',
-    '$Password = [string] "literal"',
     '$script:Password = password',
     '$global:ApiKey = GetToken',
     '$env:PASSWORD=password',
