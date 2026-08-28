@@ -41,6 +41,15 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.5.4" date="2026-08-28">
+      <description>
+        <p>
+          Adds a short, collapsible update summary using release notes already
+          returned by the manual desktop update check. Empty or unusable notes
+          are omitted, and no extra network request is made.
+        </p>
+      </description>
+    </release>
     <release version="1.5.3" date="2026-08-28">
       <description>
         <p>

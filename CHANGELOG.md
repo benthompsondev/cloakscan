@@ -2,6 +2,13 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.4] - 2026-08-28
+
+### Added
+
+- Desktop update prompts now include a short, collapsible "What changed" summary when release notes are available.
+- The summary uses metadata returned by the existing manual update check, so it makes no extra request. Empty or unusable notes leave the summary out.
+
 ## [1.5.3] - 2026-08-28
 
 ### Fixed
