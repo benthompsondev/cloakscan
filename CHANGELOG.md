@@ -2,6 +2,15 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.3] - 2026-08-28
+
+### Fixed
+
+- Literal passwords containing a dollar sign and password punctuation are detected instead of being mistaken for variable interpolation. Templates such as `prefix-$user` and `$HOME/secrets` are still left alone.
+- GitHub tokens containing underscore-delimited segments are redacted as one complete token instead of producing no finding.
+- Empty structural placeholders such as the `{}` in `xargs -I {} echo "password={}"` are left alone. Braces and brackets containing actual values are still detected.
+- AWS, Stripe, OpenAI, npm, Databricks, and Hugging Face tokens are detected when a complete token is followed by an underscore-delimited suffix. The token is redacted without removing harmless surrounding text, and the detector does not expose a partial token fragment.
+
 ## [1.5.2] - 2026-08-28
 
 ### Fixed

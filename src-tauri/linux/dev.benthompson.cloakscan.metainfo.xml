@@ -41,6 +41,20 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.5.3" date="2026-08-28">
+      <description>
+        <p>
+          Detects literal passwords containing dollar signs and punctuation,
+          redacts complete GitHub token runs, and leaves exact empty structural
+          placeholders such as xargs replacement tokens alone.
+        </p>
+        <p>
+          Fixes underscore-boundary misses for AWS, Stripe, OpenAI, npm,
+          Databricks, and Hugging Face tokens while preserving harmless text
+          around the detected token.
+        </p>
+      </description>
+    </release>
     <release version="1.5.2" date="2026-08-28">
       <description>
         <p>
