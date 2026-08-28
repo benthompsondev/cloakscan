@@ -160,6 +160,44 @@ text before sharing it.
   into — code identifiers only, genericize everywhere, placeholder, or review
   lead only. See [output-modes.md](output-modes.md) for the exact behavior table.
 
+## v1.5.2 secret-field hardening
+
+An independent review of the v1.5.1 contextual-secret work found several gaps.
+The results and reproductions are in
+[independent-detection-review.md](independent-detection-review.md).
+
+- **Dollar signs are read per format.** A `$` is only treated as a variable
+  reference when it actually is one: `${...}`, `$(...)`, `%VAR%`, a value that
+  *starts* with `$name`, or a `$name` inside a PowerShell-style assignment.
+  A literal dollar in a JSON or YAML value (`{"password":"pa$$word"}`), a
+  doubled `pa$$word` anywhere, and crypt-format hashes (`$2y$10$…`, `$6$…`) are
+  now detected. PowerShell interpolation such as `$Password = "prefix-$user"`
+  is still left alone, and so is `Write-Host "password: $pw"`, because the
+  label sits inside a string.
+- **The credential word no longer has to come last.** `aws_secret_access_key`,
+  `SecretAccessKey`, `SharedAccessKey`, `PrivateKey`, `SigningKey`, and
+  qualified names such as `SecretString`, `TokenValue`, and `passwordHash` are
+  covered. Metadata names — `password_file`, `password_length`, `api_key_name`,
+  `private_key_path`, `token_endpoint` — deliberately still are not.
+- **`pass` inside an English word is not a field name.** `compass`, `bypass`,
+  `surpass`, and `lowpass` no longer produce findings. A separator (`ftp_pass`)
+  or camel case (`SmtpUserPass`) still marks a real field.
+- **Subscript and arrow assignments** are recognized: `cfg["password"] = "…"`,
+  `$config['password'] = '…';`, and `password => "…"`.
+- **An unquoted value cannot escape the string containing it.** Previously
+  `-replace 'pattern', 'password=hunter2'` swallowed the closing quote and
+  produced invalid PowerShell.
+- **No partial redaction across overlapping secrets.** When a provider-key
+  match sits inside a wider credential match, the finding now covers the whole
+  credential instead of leaving the remainder visible. `api_key=sk-…-EXTRA` no
+  longer renders as `[API_KEY_1]-EXTRA`.
+- **A type cast no longer hides the literal behind it.**
+  `$Password = [string] "hunter2"` is detected; `[char[]]('a','b')` is not.
+- **Large imports are no longer quadratic.** A dense 2 MB file — the documented
+  import limit — scanned in about 27 s in v1.5.1 and now scans in about 2 s on
+  the same machine. Two causes: a backwards `lastIndexOf('\r', …)` per match on
+  LF-only text, and full-list overlap comparison.
+
 ## Known boundaries
 
 - Regex protection is a careful heuristic, not a complete PowerShell parser.
@@ -172,6 +210,26 @@ text before sharing it.
   full parser for every configuration language. Multiline or dynamically
   assembled values can still require manual review. Variables and expressions
   are left alone to preserve code semantics.
+- A single mid-value `$name` in an `=` assignment outside JSON/YAML — such as
+  `PASSWORD=Summer$Rain2024` in a `.env` file — is still read as a shell
+  variable and skipped. Shells really do expand it, and CloakScan cannot tell
+  which reader will consume the file. Quote it with single quotes, or review
+  the line manually.
+- An unquoted value runs to the end of its line (or its enclosing string) when
+  nothing terminates it sooner, so `Password=hunter2 was rotated yesterday`
+  redacts the trailing words too. That is deliberate: stopping at the first
+  space would leave part of a passphrase visible, and over-redaction is the
+  safer error. Untick the finding if it caught ordinary prose.
+- Values such as `true`, `none`, `default`, and `xxxx` under a password key are
+  treated as configuration, not credentials, even in quoted JSON. A literal
+  password of `xxxx` is therefore missed. This is a judgement call about which
+  error is more common, not a claim that those values are always safe.
+- Pagination and anti-forgery fields ending in `token` (`nextPageToken`,
+  `csrf_token`) are redacted. They are rarely credentials, but the field name
+  is genuinely ambiguous and over-redaction is the safer default.
+- Bare credential material with no field name — a crypt hash on its own line,
+  an opaque `Authorization:` value with no scheme word — is not detected.
+  Detecting it would mean guessing from entropy, which this tool does not do.
 - Strict detects names and organizations in explicit fields (INI, YAML,
   PowerShell assignments and hashtables, and quoted JSON keys such as
   `"displayName"` or `"companyName"`), recognized CSV columns under a plausible
