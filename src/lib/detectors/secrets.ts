@@ -6,11 +6,18 @@ import { regexMatches } from './helpers';
  * this list easy to review and extend.
  */
 const API_KEY_PATTERNS: RegExp[] = [
-  /\bsk[-_](?:live|test)[-_][A-Za-z0-9]{8,}\b/g, // Stripe-style
+  // When `_` is not legal in a provider body, use an alphabet-specific
+  // lookahead instead of `\b`: underscore is a regex word character, so `\b`
+  // would miss an otherwise complete token immediately followed by `_more`.
+  /\bsk[-_](?:live|test)[-_][A-Za-z0-9]{8,}(?![A-Za-z0-9])/g, // Stripe-style
   /\bsk-proj-[A-Za-z0-9_-]{20,}\b/g, // OpenAI project key
-  /\bsk-[A-Za-z0-9]{20,}\b/g, // OpenAI-style
-  /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g, // AWS long-term or temporary access key ID
-  /\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, // GitHub tokens
+  /\bsk-[A-Za-z0-9]{20,}(?![A-Za-z0-9])/g, // OpenAI-style
+  /\b(?:AKIA|ASIA)[0-9A-Z]{16}(?![0-9A-Z])/g, // AWS long-term or temporary access key ID
+  // GitHub tokens. The body accepts underscores so a token butted against more
+  // word characters still matches, and matches as one run: with a bare
+  // [A-Za-z0-9] body the trailing \b could never be satisfied before a `_`, so
+  // `ghp_<36>_more` produced no finding at all rather than a partial one.
+  /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/g,
   /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g, // Slack tokens
   /\bAIza[0-9A-Za-z_-]{30,}\b/g, // Google API key
   /\bsk-ant-(?:api03-)?[A-Za-z0-9_-]{20,}\b/g, // Anthropic API key
@@ -19,7 +26,7 @@ const API_KEY_PATTERNS: RegExp[] = [
   /\b[rp]k_(?:live|test)_[A-Za-z0-9]{10,}\b/g, // Stripe restricted/publishable key
   /\b(?:AC|SK)[0-9a-fA-F]{32}\b/g, // Twilio account/API key SID
   /\bSG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}\b/g, // SendGrid API key
-  /\bnpm_[A-Za-z0-9]{36}\b/g, // npm access token
+  /\bnpm_[A-Za-z0-9]{36}(?![A-Za-z0-9])/g, // npm access token
   /\bya29\.[A-Za-z0-9_-]{20,}\b/g, // Google OAuth access token
   /\bAccountKey=[A-Za-z0-9+/]{86,}==/g, // Azure Storage account key assignment
   /https:\/\/hooks\.slack\.com\/services\/T[A-Za-z0-9]{8,}\/B[A-Za-z0-9]{8,}\/[A-Za-z0-9_-]{20,}/g, // Slack incoming webhook
@@ -27,9 +34,9 @@ const API_KEY_PATTERNS: RegExp[] = [
   /\bdop_v1_[0-9a-f]{64}\b/g, // DigitalOcean personal access token
   /\bpypi-[A-Za-z0-9_-]{50,}\b/g, // PyPI upload token
   /\bdckr_pat_[A-Za-z0-9_-]{20,}\b/g, // Docker access token
-  /\bhf_[A-Za-z0-9]{30,}\b/g, // Hugging Face user access token
+  /\bhf_[A-Za-z0-9]{30,}(?![A-Za-z0-9])/g, // Hugging Face user access token
   /\bhvs\.[A-Za-z0-9_-]{20,}\b/g, // HashiCorp Vault service token
-  /\bdapi[0-9a-f]{32}\b/g, // Databricks personal access token
+  /\bdapi[0-9a-f]{32}(?![0-9a-f])/g, // Databricks personal access token
   /\bshp(?:at|ca|pa|ss)_[0-9a-f]{32}\b/g, // Shopify access tokens
   /\bglrt-[A-Za-z0-9_-]{20,}\b/g, // GitLab runner authentication token
   /\bnfp_[A-Za-z0-9]{30,}\b/g, // Netlify personal access token
@@ -222,6 +229,22 @@ const EMBEDDED_EXPANSION_RE = /\$[({]/;
  */
 const INTERPOLATION_RE = /(?<!\$)\$[A-Za-z_][A-Za-z0-9_:]*/;
 
+/**
+ * A value that could plausibly be a string built from variable references:
+ * `$name` plus identifier and path glue, as in "prefix-$user" or
+ * "$HOME/secrets". Redacting one of those corrupts a working script.
+ *
+ * Password punctuation is not glue. `P@ss!2024$xyz*` carries @, ! and *, which
+ * no shell would produce by expanding a variable into a path or identifier, so
+ * the dollar there belongs to the literal. Requiring both this shape and a
+ * `$name` before skipping keeps templates safe without losing a password that
+ * merely contains a dollar.
+ */
+const INTERPOLATION_GLUE_ONLY_RE = /^[A-Za-z0-9_\-./:\\ \t$]*$/;
+
+/** `{}`, `[]`, `()`: a replacement token such as xargs -I {}, never a secret. */
+const EMPTY_STRUCTURAL_PLACEHOLDER = /^(?:\{\}|\[\]|\(\))$/;
+
 interface ValueContext {
   quote?: '"' | "'" | null;
   /**
@@ -236,13 +259,20 @@ function isLikelySecretValue(value: string, context: ValueContext = {}): boolean
   if (
     LOOKS_REDACTED.test(value) ||
     NUMBERED_BRACKET_PLACEHOLDER.test(value) ||
-    COMMON_BRACKET_PLACEHOLDER.test(value)
+    COMMON_BRACKET_PLACEHOLDER.test(value) ||
+    EMPTY_STRUCTURAL_PLACEHOLDER.test(value)
   ) {
     return false;
   }
   if (quote !== "'" && !CRYPT_HASH_RE.test(value)) {
     if (WHOLE_EXPANSION_RE.test(value) || EMBEDDED_EXPANSION_RE.test(value)) return false;
-    if (!dollarsAreLiteral && INTERPOLATION_RE.test(value)) return false;
+    if (
+      !dollarsAreLiteral &&
+      INTERPOLATION_RE.test(value) &&
+      INTERPOLATION_GLUE_ONLY_RE.test(value)
+    ) {
+      return false;
+    }
   }
   if (BOOLEANISH.has(value.toLowerCase())) return false;
   // A PowerShell cmdlet, not a value: Get-Secret, New-Guid, Generate-Password.

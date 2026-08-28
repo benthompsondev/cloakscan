@@ -10,7 +10,12 @@
 import { describe, expect, it } from 'vitest';
 import { buildCleanText } from '../sanitize';
 import { scanText } from '../scan';
-import { SYNTHETIC_AWS_ACCESS_KEY_ID, SYNTHETIC_GITHUB_TOKEN } from '../synthetic';
+import {
+  SYNTHETIC_AWS_ACCESS_KEY_ID,
+  SYNTHETIC_GITHUB_TOKEN,
+  SYNTHETIC_PROVIDER_TOKENS,
+  SYNTHETIC_STRIPE_SHAPED_KEY,
+} from '../synthetic';
 import type { Detector } from '../types';
 import { secretAssignmentDetector } from './secrets';
 
@@ -318,5 +323,120 @@ describe('a PowerShell type cast does not hide the literal behind it', () => {
 
   it('still leaves a cast over a non-literal expression alone', () => {
     expect(values("password = [char[]]('a','b')")).toEqual([]);
+  });
+});
+
+/**
+ * Red-team findings against the public v1.5.2 build. An independent black-box
+ * pass froze its cases before reading any implementation and reproduced these
+ * against the live web UI, where each produced zero findings.
+ */
+describe('a dollar sign in password punctuation is not an interpolation', () => {
+  it.each([
+    ['the reported case', 'password="P@ss!2024$xyz*"', 'P@ss!2024$xyz*'],
+    ['exclamation and dollar', 'password="my$ecret!"', 'my$ecret!'],
+    ['doubled dollar with punctuation', 'DB_PASSWORD="p@$$w0rd!"', 'p@$$w0rd!'],
+    ['percent and dollar', 'password="50%$off#now"', '50%$off#now'],
+  ])('detects %s', (_name, source, expected) => {
+    expect(values(source)).toEqual([expected]);
+  });
+
+  it.each([
+    // A value made only of variable references and identifier/path glue is
+    // still read as a template, because redacting it would corrupt a script.
+    'password = "prefix-$user"',
+    'password = prefix-$user',
+    '$Password = "prefix-$env:USERNAME"',
+    'password="path/to/$dir/file"',
+    'password="a${b}c"',
+    'password=$(Get-Secret)',
+    'PASSWORD="$HOME/secrets"',
+  ])('still leaves an interpolation template alone: %s', (source) => {
+    expect(values(source)).toEqual([]);
+  });
+});
+
+describe('a provider token followed by more word characters', () => {
+  const body = 'A'.repeat(36);
+
+  it('redacts the whole run rather than nothing', () => {
+    const source = `ghp_${body}_after_123_${'x'.repeat(44)}`;
+
+    expect(clean(source)).toBe('[API_KEY_1]');
+  });
+
+  it('leaves no fragment of the run visible', () => {
+    const source = `ghp_${body}_after_123_${'x'.repeat(44)}`;
+    const out = clean(source);
+
+    for (const fragment of ['after', '123', 'xxxx', body]) {
+      expect(out, `fragment "${fragment}" survived`).not.toContain(fragment);
+    }
+  });
+
+  it.each([
+    ['bare token', `ghp_${body}`],
+    ['token then space', `ghp_${body} trailing words`],
+    ['token then dot', `ghp_${body}.extra`],
+    ['token in an assignment', `token=ghp_${body}`],
+  ])('still detects %s', (_name, source) => {
+    expect(clean(source)).not.toContain(body);
+  });
+
+  it('does not fire on a prefix that is too short to be a token', () => {
+    expect(clean('ghp_short')).toBe('ghp_short');
+  });
+});
+
+describe('a provider token followed by an underscore-delimited suffix', () => {
+  const npmToken = ['npm', '0123456789abcdefghijklmnopqrstuvwxyz'].join('_');
+  const openAiToken = ['sk', `DEMO${'A'.repeat(24)}`].join('-');
+  const cases = [
+    ['AWS access key ID', SYNTHETIC_AWS_ACCESS_KEY_ID],
+    ['Stripe secret key', SYNTHETIC_STRIPE_SHAPED_KEY],
+    ['OpenAI key', openAiToken],
+    ['npm token', npmToken],
+    ['Databricks token', SYNTHETIC_PROVIDER_TOKENS.databricks],
+    ['Hugging Face token', SYNTHETIC_PROVIDER_TOKENS.huggingFace],
+  ] as const;
+
+  it.each(cases)('detects a bare %s', (_name, token) => {
+    expect(clean(token)).toBe('[API_KEY_1]');
+  });
+
+  it.each(cases)('redacts the %s but preserves an underscore-delimited suffix', (_name, token) => {
+    expect(clean(`${token}_more_123`)).toBe('[API_KEY_1]_more_123');
+  });
+
+  it.each([
+    ['AWS short body', `AKIA${'A'.repeat(15)}`],
+    ['Stripe short body', 'sk_live_short'],
+    ['OpenAI short body', `sk-${'A'.repeat(19)}`],
+    ['npm short body', `npm_${'A'.repeat(35)}`],
+    ['Databricks short body', `dapi${'a'.repeat(31)}`],
+    ['Hugging Face short body', `hf_${'A'.repeat(29)}`],
+    ['AWS legal-alphabet continuation', `${SYNTHETIC_AWS_ACCESS_KEY_ID}Z`],
+    ['npm legal-alphabet continuation', `${npmToken}Z`],
+    ['Databricks legal-alphabet continuation', `${SYNTHETIC_PROVIDER_TOKENS.databricks}a`],
+  ])('does not partially match a close negative: %s', (_name, source) => {
+    expect(clean(source)).toBe(source);
+  });
+});
+
+describe('an empty structural placeholder is not a secret', () => {
+  it.each([
+    ['xargs replacement token', 'xargs -I {} echo "password={}"'],
+    ['bare empty braces', 'password={}'],
+    ['empty brackets', 'password=[]'],
+    ['empty parens', 'password=()'],
+  ])('leaves %s unchanged', (_name, source) => {
+    expect(clean(source)).toBe(source);
+  });
+
+  it.each([
+    ['braced value', 'password={abc123}', ['{abc123}']],
+    ['bracketed value', 'password=[abc123]', ['[abc123]']],
+  ])('still detects a %s', (_name, source, expected) => {
+    expect(values(source)).toEqual(expected);
   });
 });
