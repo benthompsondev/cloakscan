@@ -41,6 +41,21 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.5.2" date="2026-08-28">
+      <description>
+        <p>
+          Detects credential fields that carry a trailing qualifier, such as
+          PASSWORD_OLD or API_KEY_V2, and field names where the credential word
+          is not last, such as aws_secret_access_key. Reads a dollar sign in a
+          value per format instead of always treating it as a variable.
+        </p>
+        <p>
+          Stops leaving part of a credential behind when matches overlap, keeps
+          surrounding code valid, and no longer redacts code that reads a
+          secret from somewhere else. Large pastes scan far faster.
+        </p>
+      </description>
+    </release>
     <release version="1.5.1" date="2026-08-27">
       <description>
         <p>

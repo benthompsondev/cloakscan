@@ -2,6 +2,31 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.2] - 2026-08-28
+
+### Fixed
+
+- Credential field names with a trailing qualifier are detected again. `PASSWORD_OLD`, `PASSWORD_NEW`, `DB_PASSWORD_PROD`, `API_KEY_V2`, and `TOKEN_STAGING` previously produced no finding at all. Names that describe a credential without being one, such as `password_file`, `password_length`, and `api_key_name`, still pass through.
+- Field names where the credential word is not last now match: `aws_secret_access_key`, `SecretAccessKey`, `SharedAccessKey`, `PrivateKey`, `SigningKey`, `SecretString`, and `passwordHash`.
+- A dollar sign in a value is read per format instead of always meaning a variable. `pa$$word`, a `$` inside a JSON or YAML value, and crypt-format hashes such as `$2y$10$…` are detected. `${VAR}`, `$(cmd)`, `%VAR%`, `$1`, and PowerShell interpolation are still left alone.
+- Subscript and arrow assignments are recognized: `cfg["password"] = "…"` and `password => "…"`.
+- `mysql -pSecret` and `--password secret --verbose` are detected. Command-line values are judged as the single token they are.
+
+### Safety
+
+- No partial redaction across overlapping matches. A provider-key match inside a wider credential no longer leaves the remainder visible, so `api_key=sk-…-EXTRA` cannot render as `[API_KEY_1]-EXTRA`.
+- An unquoted value can no longer escape the string containing it, so `-replace 'pattern', 'password=x'` keeps its closing quote and stays valid PowerShell. An apostrophe in ordinary prose is not treated as a string delimiter.
+- Code that reads a secret from somewhere else is no longer redacted as if it were one. `os.environ["KEY"]` and `process.env.TOKEN` keep their contents.
+- `compass`, `bypass`, `surpass`, and `lowpass` are no longer mistaken for password fields.
+
+### Performance
+
+- Scanning is no longer quadratic. A dense 2 MB import, the documented limit, went from about 27 seconds to about 2 seconds, and a 500 KB paste now scans in under half a second.
+
+### Added
+
+- A frozen synthetic outsider corpus of 41 cases across `.env`, JSON, YAML, Docker Compose, Terraform, PowerShell, shell, Python, TypeScript, INI, logs, and command output, with hand-written expected output. It runs as part of the normal test suite so coverage cannot drift back toward PowerShell only.
+
 ## [1.5.1] - 2026-08-27
 
 ### Fixed
