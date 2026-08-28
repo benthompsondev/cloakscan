@@ -2076,6 +2076,24 @@ body {
   color: var(--high);
 }
 
+.update-notes {
+  width: 100%;
+}
+
+.update-notes-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.update-notes-list li {
+  line-height: 1.45;
+}
+
 .update-restart-note {
   margin: 14px 0 0;
   font-size: 12px;

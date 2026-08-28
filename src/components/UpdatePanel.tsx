@@ -6,6 +6,7 @@ import {
   canSelfUpdate,
   checkForUpdate,
   installUpdate,
+  summarizeReleaseNotes,
   updateErrorMessage,
 } from '../lib/updater';
 import { ExternalLink } from './ExternalLink';
@@ -14,7 +15,7 @@ type UpdateState =
   | { kind: 'idle' }
   | { kind: 'checking' }
   | { kind: 'latest' }
-  | { kind: 'available'; version: string }
+  | { kind: 'available'; version: string; notes: string[] }
   | { kind: 'installing'; downloaded: number; total?: number }
   | { kind: 'restart' }
   | { kind: 'error'; message: string };
@@ -23,6 +24,48 @@ function progressText(downloaded: number, total?: number): string {
   if (!total) return 'Downloading update…';
   const percent = Math.min(100, Math.round((downloaded / total) * 100));
   return `Downloading update… ${percent}%`;
+}
+
+/**
+ * The collapsible "What changed" summary. Kept separate so it can be rendered
+ * and asserted on its own: a release with no usable notes must produce no
+ * section at all rather than an empty one.
+ */
+export function UpdateNotes({ version, notes }: { version: string; notes: string[] }) {
+  const [open, setOpen] = useState(false);
+  if (notes.length === 0) return null;
+
+  return (
+    <div className="update-notes">
+      <button
+        type="button"
+        className="candidate-panel-head"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="finding-section-caret" aria-hidden="true">
+          {open ? '▾' : '▸'}
+        </span>
+        <span>
+          <strong>What changed in v{version}</strong>
+          {/*
+            Deliberately not called "signed": Tauri verifies the downloaded
+            artifact against the built-in key, not the manifest JSON these
+            notes come from. The install is signature-gated either way, but the
+            summary text itself is not authenticated and must not imply it is.
+          */}
+          <span className="candidate-count">Summary from the release notes</span>
+        </span>
+      </button>
+      {open && (
+        <ul className="update-notes-list">
+          {notes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export function UpdatePanel() {
@@ -52,7 +95,12 @@ export function UpdatePanel() {
       setPendingUpdate(update);
       setState(
         update
-          ? { kind: 'available', version: update.version }
+          ? {
+              kind: 'available',
+              version: update.version,
+              // Already downloaded as part of the version check; no second request.
+              notes: summarizeReleaseNotes(update.body),
+            }
           : { kind: 'latest' },
       );
     } catch (error) {
@@ -114,16 +162,26 @@ export function UpdatePanel() {
         {state.kind === 'available' && (
           <>
             <p className="update-status">Update available: v{state.version}</p>
+            <UpdateNotes version={state.version} notes={state.notes} />
             {supportsSelfUpdate === null ? (
               <p className="muted">Checking how this package should be updated…</p>
             ) : supportsSelfUpdate ? (
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => void downloadAndInstall()}
-              >
-                Download and install
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void downloadAndInstall()}
+                >
+                  Download and install
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setState({ kind: 'idle' })}
+                >
+                  Not now
+                </button>
+              </>
             ) : (
               <>
                 <p className="muted">

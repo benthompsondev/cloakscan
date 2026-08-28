@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { AboutView } from './AboutView';
+import { UpdateNotes } from './UpdatePanel';
 import { Wordmark } from './Wordmark';
 
 const root = join(__dirname, '..', '..');
@@ -68,5 +69,22 @@ describe('public demo media', () => {
     expect(readme.indexOf('docs/media/cloakscan-demo.gif')).toBeLessThan(
       readme.indexOf('docs/screenshots/scan-desktop-1440x900.png'),
     );
+  });
+});
+
+describe('UpdateNotes', () => {
+  it('offers a collapsed What changed summary when the release carries notes', () => {
+    const html = renderToStaticMarkup(
+      <UpdateNotes version="1.6.0" notes={['Detects qualified field names', 'Faster large pastes']} />,
+    );
+
+    expect(html).toContain('What changed in v1.6.0');
+    expect(html).toContain('aria-expanded="false"');
+    // Collapsed by default: the panel stays short until the reader opens it.
+    expect(html).not.toContain('Detects qualified field names');
+  });
+
+  it('renders nothing at all when the release has no usable notes', () => {
+    expect(renderToStaticMarkup(<UpdateNotes version="1.6.0" notes={[]} />)).toBe('');
   });
 });

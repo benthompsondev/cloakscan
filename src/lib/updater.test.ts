@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { canSelfUpdate, compareVersions, updateErrorMessage } from './updater';
+import {
+  canSelfUpdate,
+  compareVersions,
+  summarizeReleaseNotes,
+  updateErrorMessage,
+} from './updater';
 
 const tauriCore = vi.hoisted(() => ({
   invoke: vi.fn(),
@@ -63,6 +68,79 @@ describe('updateErrorMessage', () => {
   it('handles Tauri release-fetch failures as network errors', () => {
     const detail = 'Could not fetch a valid release JSON from the remote';
     expect(updateErrorMessage(detail, 'check')).toContain('Check your connection');
+  });
+});
+
+describe('summarizeReleaseNotes', () => {
+  it('keeps a short plain summary as one line', () => {
+    expect(summarizeReleaseNotes('Fixes two detector gaps and speeds up large pastes.')).toEqual([
+      'Fixes two detector gaps and speeds up large pastes.',
+    ]);
+  });
+
+  it('prefers bullets and strips Markdown syntax', () => {
+    const body = [
+      '## What changed',
+      '',
+      '- Detects `PASSWORD_OLD` and **other qualified** field names',
+      '- Fixes [a partial redaction](https://example.test/pr/1)',
+      '',
+      '## Downloads',
+      '- Windows installer',
+    ].join('\n');
+
+    expect(summarizeReleaseNotes(body)).toEqual([
+      'Detects PASSWORD_OLD and other qualified field names',
+      'Fixes a partial redaction',
+      'Windows installer',
+    ]);
+  });
+
+  it('drops code fences, tables, quotes, HTML, and rules', () => {
+    const body = [
+      '> quoted intro',
+      '| col | col |',
+      '---',
+      '<!-- hidden -->',
+      '<p>markup</p>',
+      '```bash',
+      'npm install cloakscan',
+      '```',
+      '- The only real line',
+    ].join('\n');
+
+    expect(summarizeReleaseNotes(body)).toEqual(['The only real line']);
+  });
+
+  it('caps a long release body to a few readable lines', () => {
+    const body = Array.from({ length: 12 }, (_, index) => `- Item number ${index}`).join('\n');
+    const summary = summarizeReleaseNotes(body);
+
+    expect(summary).toHaveLength(4);
+    expect(summary[0]).toBe('Item number 0');
+  });
+
+  it('truncates a single very long line on a word boundary', () => {
+    const summary = summarizeReleaseNotes(`- ${'word '.repeat(80)}`);
+
+    expect(summary).toHaveLength(1);
+    // The cap plus the ellipsis it adds.
+    expect(summary[0].length).toBeLessThanOrEqual(201);
+    expect(summary[0].endsWith('…')).toBe(true);
+    expect(summary[0]).not.toContain('word word…word');
+  });
+
+  it.each([
+    ['undefined', undefined],
+    ['null', null],
+    ['empty string', ''],
+    ['whitespace only', '   \n\t\n  '],
+    ['headings only', '# Release\n\n## Notes'],
+    ['a lone horizontal rule', '---'],
+    ['an unterminated code fence', '```\nnpm run build'],
+    ['a non-string value', 42 as unknown as string],
+  ])('returns nothing usable for %s', (_name, body) => {
+    expect(summarizeReleaseNotes(body as string)).toEqual([]);
   });
 });
 
