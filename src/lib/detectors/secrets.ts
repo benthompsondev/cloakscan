@@ -597,6 +597,21 @@ const INVALID_PASSWORD_PROSE_RE =
   /\b(?:invalid|rejected)[ \t]+(?:password|credential)[ \t]+/gi;
 const PROSE_NON_SECRET_VALUE_RE =
   /^(?:unavailable|not[ \t]+available|unknown|expired|incorrect|invalid)[.!?]?$/i;
+/** A credential quoted in support text carries a digit or symbol; a word does not. */
+const CREDENTIAL_SHAPED_RE = /[0-9!@#$%^&*_=+\\]/;
+/**
+ * Prose gives the value no delimiter, so it runs to the end of the line.
+ * Judging that whole run against the non-secret list above almost never
+ * matched, and "The new password is required to be 12 characters" lost its
+ * remainder to a placeholder. Judge the first token as well: a password quoted
+ * in support text looks like a credential, a sentence carrying on does not.
+ */
+function isProseCredentialValue(value: string): boolean {
+  const [first = ''] = value.split(/[ \t]/, 1);
+  if (PROSE_NON_SECRET_VALUE_RE.test(value) || PROSE_NON_SECRET_VALUE_RE.test(first)) return false;
+  return CREDENTIAL_SHAPED_RE.test(first);
+}
+
 const GITHUB_TOKEN_BEFORE_ADJACENT_SECRET_FIELD_RE =
   /^gh[pousr]_[A-Za-z0-9]{36}(?=(?:password|passwd|passphrase|secret|token|api[-_.]?key)=)/i;
 const ADJACENT_SECRET_FIELD_RE =
@@ -683,7 +698,7 @@ function detectSecretAssignments(text: string): RawMatch[] {
   let tempPassword: RegExpExecArray | null;
   while ((tempPassword = tempPasswordRe.exec(text)) !== null) {
     const match = captureValue(text, index, tempPassword.index + tempPassword[0].length);
-    if (match && !PROSE_NON_SECRET_VALUE_RE.test(match.value)) matches.push(match);
+    if (match && isProseCredentialValue(match.value)) matches.push(match);
   }
 
   const invalidPasswordRe = new RegExp(
@@ -695,7 +710,7 @@ function detectSecretAssignments(text: string): RawMatch[] {
     const match = captureValue(text, index, invalidPassword.index + invalidPassword[0].length, {
       cliToken: true,
     });
-    if (match && /[0-9!@#$%^&*_=+\\]/.test(match.value)) matches.push(match);
+    if (match && CREDENTIAL_SHAPED_RE.test(match.value)) matches.push(match);
   }
 
   const xmlRe = new RegExp(XML_SECRET_RE.source, XML_SECRET_RE.flags);

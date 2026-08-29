@@ -27,9 +27,17 @@ const PYTHON_AUTH_TUPLE_RE =
 const BUFFER_BASIC_AUTH_RE =
   /\bBuffer\.from\([ \t]*(["'])([^"'\r\n]+:[^"'\r\n]+)\1[ \t]*\)\.toString\([ \t]*["']base64["'][ \t]*\)/gi;
 
+/** `$USER`, `${CI_TOKEN}`, `%TOKEN%`, `$env:TOKEN` — a reference, not a literal. */
+const RUNTIME_REFERENCE = String.raw`(?:\$\{[^}\r\n]*\}|\$(?:env:)?[A-Za-z_][A-Za-z0-9_]*|%[A-Za-z_][A-Za-z0-9_]*%)`;
+const REFERENCE_PAIR_RE = new RegExp(`^${RUNTIME_REFERENCE}[:,]${RUNTIME_REFERENCE}$`);
+
 function credentialPairConfidence(value: string): 'high' | null {
-  const normalized = value.toLowerCase().replace(/[\s()"']/g, '');
-  return /^(?:user|username)(?::|,)(?:pass|password)$/.test(normalized) ? null : 'high';
+  const bare = value.replace(/[\s()"']/g, '');
+  if (/^(?:user|username)(?::|,)(?:pass|password)$/.test(bare.toLowerCase())) return null;
+  // sshpass and PSCredential already keep a `$VAR` reference intact. A pair
+  // built only from references holds no literal credential either, so
+  // redacting it just deletes the variable names from a documented command.
+  return REFERENCE_PAIR_RE.test(bare) ? null : 'high';
 }
 
 const ADO_CONNECTION_RE =

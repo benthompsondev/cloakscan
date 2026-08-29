@@ -360,3 +360,24 @@ test('strict CSP meta tag is present in the production build', async ({ page }) 
   expect(csp).toContain("default-src 'none'");
   expect(csp).toContain("connect-src 'none'");
 });
+
+test('scan summary reports the real scan cost, not the state-update cost', async ({ page }) => {
+  await page.goto('/');
+
+  // Big enough that a real scan cannot round down to the 1 ms floor the
+  // summary clamps to. Timing the React updater instead of the scan reported
+  // 1 ms here no matter how much text was pasted.
+  const block = [
+    'DATABASE_URL=postgres://app:Hunter2@db.internal:5432/appdb',
+    'net use Z: \\\\fs01\\share /user:CORP\\alice Hunter2!',
+    '{"username":"svc_deploy","password":"Hunter2!","host":"db01.corp.local"}',
+    'auth failed user=alice ip=10.20.30.40 attempt=3',
+  ].join('\n');
+  await page.getByRole('textbox', { name: 'Source text input' }).fill(`${block}\n`.repeat(400));
+  await page.getByRole('button', { name: 'Scan locally' }).click();
+
+  const duration = page.getByText('Duration').locator('..');
+  await expect(duration).toContainText(/\d+ ms/);
+  const reported = Number((await duration.innerText()).match(/(\d+) ms/)![1]);
+  expect(reported).toBeGreaterThan(1);
+});

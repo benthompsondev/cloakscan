@@ -446,7 +446,12 @@ export default function App() {
   const scan = () => {
     const startedAt = new Date();
     const t0 = performance.now();
-    setSession((current) => scanSession(current));
+    // Scan before setting state, the way saveAndUseList already does. A
+    // functional updater runs during React's render, not at the call, so
+    // timing around setSession measured how long it took to queue the work
+    // and every scan reported the same 1 ms floor whatever its size.
+    const scanned = scanSession(session);
+    setSession(scanned);
     setScanMeta({ startedAt, durationMs: performance.now() - t0 });
   };
 
@@ -501,25 +506,18 @@ export default function App() {
   const hideCandidate = (term: string) => {
     const startedAt = new Date();
     const t0 = performance.now();
-    setSession((current) => {
-      const existingTerms = parsePrivateTerms(
-        current.privateTermsInput,
-        current.termsCaseSensitive,
-      );
-      const normalize = (value: string) =>
-        current.termsCaseSensitive ? value : value.toLocaleLowerCase();
-      const alreadyPresent = existingTerms.some(
-        (existing) => normalize(existing) === normalize(term),
-      );
-      const separator =
-        current.privateTermsInput.length === 0 || current.privateTermsInput.endsWith('\n')
-          ? ''
-          : '\n';
-      const privateTermsInput = alreadyPresent
-        ? current.privateTermsInput
-        : `${current.privateTermsInput}${separator}${term}`;
-      return scanSession(current, privateTermsInput);
-    });
+    const existingTerms = parsePrivateTerms(session.privateTermsInput, session.termsCaseSensitive);
+    const normalize = (value: string) =>
+      session.termsCaseSensitive ? value : value.toLocaleLowerCase();
+    const alreadyPresent = existingTerms.some(
+      (existing) => normalize(existing) === normalize(term),
+    );
+    const separator =
+      session.privateTermsInput.length === 0 || session.privateTermsInput.endsWith('\n') ? '' : '\n';
+    const privateTermsInput = alreadyPresent
+      ? session.privateTermsInput
+      : `${session.privateTermsInput}${separator}${term}`;
+    setSession(scanSession(session, privateTermsInput));
     setScanMeta({ startedAt, durationMs: performance.now() - t0 });
   };
 
