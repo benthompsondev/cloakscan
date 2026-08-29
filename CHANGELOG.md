@@ -2,6 +2,17 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.5] - 2026-08-29
+
+### Fixed
+
+- YAML literal and folded blocks under a credential field now redact the complete secret body instead of leaving later lines visible.
+- Common pasted credential forms are covered: `sshpass -p`, Azure service-principal login, `net use`, curl basic auth, Python `auth=(...)`, JavaScript `Buffer.from("user:password")`, and Redis URLs with an empty username.
+- Telegram bot tokens are detected in their canonical `/bot<TOKEN>/...` URL form. A classic GitHub token directly beside another credential field no longer absorbs that field or leaves it unredacted.
+- Quoted JSON usernames, literal `PSCredential` usernames, complete `DOMAIN\\user` values, credential-command hosts, labeled hosts, Azure service endpoints, Azure Storage account names, and labeled NTLM hashes are redacted in their clear contexts.
+- Obvious temporary-password and authentication-error literals in support text are covered without treating ordinary status prose as a secret. PowerShell static member calls such as `[PSCredential]::new(...)` are no longer mistaken for credential fields.
+- Common documentation placeholders such as `{{ vault_password }}`, `<YOUR_API_KEY>`, `changeme`, `xoxb-not-a-real-token`, and all-one-character Google-key examples are left alone.
+
 ## [1.5.4] - 2026-08-28
 
 ### Added

@@ -1,0 +1,2 @@
+DATABASE_PASSWORD=Import!Pass42
+HOST=import-test.internal

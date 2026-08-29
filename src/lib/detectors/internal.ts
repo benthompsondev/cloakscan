@@ -3,7 +3,7 @@ import { regexMatches } from './helpers';
 import { isValidIpv4 } from './network';
 
 /** TLD or zone labels that conventionally mark intranet / non-public hosts. */
-const INTERNAL_SUFFIXES = ['local', 'internal', 'corp', 'lan', 'intranet', 'intra'];
+const INTERNAL_SUFFIXES = ['local', 'internal', 'corp', 'lan', 'intranet', 'intra', 'lab'];
 const AD_ZONE_LABELS = ['ad', 'ds'];
 const ANY_POSITION_INTERNAL_LABELS = [...INTERNAL_SUFFIXES, ...AD_ZONE_LABELS];
 
@@ -24,7 +24,9 @@ export function isPrivateIpv4(host: string): boolean {
 /** Extract the hostname from a matched URL without using the DOM URL parser. */
 function hostOf(url: string): string {
   const afterScheme = url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
-  return afterScheme.split(/[/:?#]/, 1)[0].toLowerCase();
+  const authority = afterScheme.split(/[/?#]/, 1)[0];
+  const withoutUserInfo = authority.slice(authority.lastIndexOf('@') + 1);
+  return withoutUserInfo.split(':', 1)[0].toLowerCase();
 }
 
 /** True if a hostname looks non-public: internal zone labels, single label, private IP, or a tenant domain. */
@@ -65,6 +67,15 @@ const HOSTNAME_RE = /\b[a-z0-9](?:[a-z0-9-]{0,62})?(?:\.[a-z0-9](?:[a-z0-9-]{0,6
 
 /** M365 tenant domains, e.g. contoso.onmicrosoft.com or contoso.mail.onmicrosoft.com. */
 const ONMICROSOFT_RE = /\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.onmicrosoft\.com\b/gi;
+const LABELED_HOST_RE =
+  /(?<![A-Za-z0-9_])(?:host|hostname|server)[ \t]*(?:=|:)[ \t]*["']?([A-Za-z0-9][A-Za-z0-9._-]{1,253})\b/gi;
+const CMDKEY_TARGET_RE = /\bcmdkey\b[^\r\n]{0,200}?[ \t]\/add:([A-Za-z0-9][A-Za-z0-9._-]{1,253})\b/gi;
+const AZURE_SERVICE_ENDPOINT_HOST_RE =
+  /\bEndpoint[ \t]*=[ \t]*sb:\/\/([A-Za-z0-9][A-Za-z0-9.-]{1,253})\b/gi;
+
+function contextualHostConfidence(value: string): 'high' | null {
+  return /[.\d-]/.test(value) ? 'high' : null;
+}
 
 export const internalHostnameDetector: Detector = {
   id: 'internal-hostname',
@@ -88,6 +99,18 @@ export const internalHostnameDetector: Detector = {
         },
       }),
       ...regexMatches(text, ONMICROSOFT_RE),
+      ...regexMatches(text, LABELED_HOST_RE, {
+        group: 1,
+        confidenceFor: contextualHostConfidence,
+      }),
+      ...regexMatches(text, CMDKEY_TARGET_RE, {
+        group: 1,
+        confidenceFor: () => 'high',
+      }),
+      ...regexMatches(text, AZURE_SERVICE_ENDPOINT_HOST_RE, {
+        group: 1,
+        confidenceFor: () => 'high',
+      }),
     ];
     const seen = new Set<string>();
     return matches.filter((match: RawMatch) => {

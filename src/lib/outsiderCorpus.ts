@@ -530,7 +530,7 @@ export const OUTSIDER_CORPUS: readonly CorpusCase[] = Object.freeze([
     expected: lines(
       '[CONNECTION_STRING_1]Encrypt=True;',
       '[CONNECTION_STRING_2]',
-      'Endpoint=sb://demo.servicebus.windows.net/;SharedAccessKeyName=send;SharedAccessKey=[SECRET_1]',
+      'Endpoint=sb://[INTERNAL_HOST_1]/;SharedAccessKeyName=send;SharedAccessKey=[SECRET_1]',
     ),
     note: 'Encrypt=True is not part of the credential. SharedAccessKeyName names the key; SharedAccessKey is it.',
   },

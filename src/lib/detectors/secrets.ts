@@ -17,7 +17,7 @@ const API_KEY_PATTERNS: RegExp[] = [
   // word characters still matches, and matches as one run: with a bare
   // [A-Za-z0-9] body the trailing \b could never be satisfied before a `_`, so
   // `ghp_<36>_more` produced no finding at all rather than a partial one.
-  /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/g,
+  /\bgh[pousr]_(?:[A-Za-z0-9]{36}(?=(?:password|passwd|passphrase|secret|token|api[-_.]?key)=)|[A-Za-z0-9_]{20,}\b)/g,
   /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g, // Slack tokens
   /\bAIza[0-9A-Za-z_-]{30,}\b/g, // Google API key
   /\bsk-ant-(?:api03-)?[A-Za-z0-9_-]{20,}\b/g, // Anthropic API key
@@ -43,10 +43,16 @@ const API_KEY_PATTERNS: RegExp[] = [
   /\bxkeysib-[0-9a-f]{64}\b/g, // Brevo API key
   /\bAGE-SECRET-KEY-1[A-Z0-9]{58}\b/g, // age identity secret key
   /https:\/\/discord(?:app)?\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+/g, // Discord webhook
-  /\b\d{8,10}:AA[A-Za-z0-9_-]{32,33}\b/g, // Telegram bot token
+  /(?<!\d)\d{8,10}:AA[A-Za-z0-9_-]{32,33}\b/g, // Telegram bot token, including /bot<TOKEN>
   /(?<=[?&]sig=)[A-Za-z0-9%+/_=-]{20,}/gi, // Azure SAS signature value
   /(?<=[?&]X-Amz-Signature=)[0-9a-f]{64}(?=&|$)/gi, // S3 presigned URL signature value
 ];
+
+const API_KEY_PLACEHOLDER_RE = /(?:not[-_ ]?a[-_ ]?real|placeholder|insert[-_ ]?key)/i;
+
+function isApiKeyPlaceholder(value: string): boolean {
+  return API_KEY_PLACEHOLDER_RE.test(value) || /^AIzaA+$/i.test(value);
+}
 
 export const apiKeyDetector: Detector = {
   id: 'api-key',
@@ -56,7 +62,10 @@ export const apiKeyDetector: Detector = {
   label: 'API_KEY',
   priority: 92,
   explanation: 'Matches a known API key format. Leaked keys grant direct account access.',
-  detect: (text) => API_KEY_PATTERNS.flatMap((re) => regexMatches(text, re)),
+  detect: (text) =>
+    API_KEY_PATTERNS.flatMap((re) => regexMatches(text, re)).filter(
+      (match) => !isApiKeyPlaceholder(match.value),
+    ),
 };
 
 /** "Bearer <token>" — the scheme word plus the credential that follows it. */
@@ -163,7 +172,7 @@ function isCredentialFieldName(label: string): boolean {
  * JSON/YAML/JS key, which changes how a `$` in the value is read.
  */
 const ASSIGNMENT_LABEL_RE = new RegExp(
-  String.raw`(?<![A-Za-z0-9_])(["']?)(${SECRET_KEY_PATTERN})\1[ \t]*\]?[ \t]*(=>|:=|=|:)[ \t]*`,
+  String.raw`(?<![A-Za-z0-9_])(["']?)(${SECRET_KEY_PATTERN})\1[ \t]*\]?[ \t]*(=>|:=|=|:(?!:))[ \t]*`,
   'gi',
 );
 
@@ -198,6 +207,8 @@ const LOOKS_REDACTED =
   /^(?:<(?:redacted|removed|hidden)>|x{4,}|\*{4,}|redacted|removed|hidden|none|null)$/i;
 const NUMBERED_BRACKET_PLACEHOLDER = /^\[[A-Z][A-Z0-9_]*_[0-9]+\]$/;
 const COMMON_BRACKET_PLACEHOLDER = /^\[(?:redacted|secret|hidden|removed)\]$/i;
+const TEMPLATE_PLACEHOLDER =
+  /^(?:\{\{[^{}\r\n]{1,200}\}\}|<(?:YOUR|MY|INSERT|REPLACE)[-_ A-Z0-9]{1,80}>|change[-_ ]?me)$/i;
 
 /** Config words that follow pass/secret-style keys but are not credentials. */
 const BOOLEANISH = new Set([
@@ -260,6 +271,7 @@ function isLikelySecretValue(value: string, context: ValueContext = {}): boolean
     LOOKS_REDACTED.test(value) ||
     NUMBERED_BRACKET_PLACEHOLDER.test(value) ||
     COMMON_BRACKET_PLACEHOLDER.test(value) ||
+    TEMPLATE_PLACEHOLDER.test(value) ||
     EMPTY_STRUCTURAL_PLACEHOLDER.test(value)
   ) {
     return false;
@@ -510,7 +522,8 @@ function captureValue(
   }
   if (looksExecutableValue(windowed)) return null;
 
-  let terminator = findValueTerminator(windowed);
+  const adjacentSecretField = GITHUB_TOKEN_BEFORE_ADJACENT_SECRET_FIELD_RE.exec(windowed);
+  let terminator = adjacentSecretField?.[0].length ?? findValueTerminator(windowed);
   if (terminator === -1 && valueStart + windowed.length < endOfLine) {
     // Nothing ended the value within the window. Rare enough to pay for the
     // whole line rather than swallow an unrelated field further along it.
@@ -524,6 +537,72 @@ function captureValue(
   if (!value || !isLikelySecretValue(value, { dollarsAreLiteral })) return null;
   return { start: valueStart, end: valueEnd, value, confidence: 'medium' };
 }
+
+/**
+ * Capture a YAML literal/folded block under a credential key. The block marker
+ * and first-line indentation stay in place; the complete body becomes one
+ * finding so no later line can survive as a convincing partial redaction.
+ */
+function captureYamlBlockValue(
+  text: string,
+  index: LineIndex,
+  labelStart: number,
+  valueStart: number,
+): RawMatch | null {
+  const markerEnd = index.lineEnd[valueStart];
+  const marker = text.slice(valueStart, markerEnd).trim();
+  if (!isYamlBlockMarker(marker)) return null;
+
+  const labelLineStart = index.lineStart[labelStart];
+  let parentIndent = 0;
+  while (text[labelLineStart + parentIndent] === ' ') parentIndent += 1;
+
+  let cursor = markerEnd;
+  let bodyStart = -1;
+  let bodyEnd = -1;
+  while (cursor < text.length) {
+    if (text[cursor] === '\r') cursor += 1;
+    if (text[cursor] === '\n') cursor += 1;
+    if (cursor >= text.length) break;
+
+    const lineStart = cursor;
+    const lineEnd = index.lineEnd[lineStart];
+    let indent = 0;
+    while (text[lineStart + indent] === ' ') indent += 1;
+    const blank = lineStart + indent >= lineEnd;
+    if (!blank && indent <= parentIndent) break;
+    if (!blank && bodyStart === -1) bodyStart = lineStart + indent;
+    if (bodyStart !== -1) bodyEnd = lineEnd;
+    cursor = lineEnd;
+  }
+
+  if (bodyStart === -1 || bodyEnd < bodyStart) return null;
+  const value = text.slice(bodyStart, bodyEnd);
+  if (!isLikelySecretValue(value, { dollarsAreLiteral: true })) return null;
+  return { start: bodyStart, end: bodyEnd, value, confidence: 'medium' };
+}
+
+function isYamlBlockMarker(value: string): boolean {
+  return /^[|>](?:[1-9][+-]?|[+-][1-9]?)?$/.test(value.trim());
+}
+
+const SSH_PASS_PASSWORD_RE = /\bsshpass\b[^\r\n]{0,200}?[ \t]-p[ \t]+/gi;
+const AZ_SERVICE_PRINCIPAL_PASSWORD_RE =
+  /\baz[ \t]+login\b(?=[^\r\n]{0,200}--service-principal\b)[^\r\n]{0,200}?[ \t]-p[ \t]+/gi;
+const NET_USE_PASSWORD_RE =
+  /\bnet[ \t]+use\b[^\r\n]{0,256}?[ \t]\/user:[^\s]+[ \t]+/gi;
+const TEMP_PASSWORD_PROSE_RE =
+  /\b(?:temp(?:orary)?|current|new|default)[ \t]+(?:password|passphrase)[ \t]+(?:is|was)[ \t]+/gi;
+const INVALID_PASSWORD_PROSE_RE =
+  /\b(?:invalid|rejected)[ \t]+(?:password|credential)[ \t]+/gi;
+const PROSE_NON_SECRET_VALUE_RE =
+  /^(?:unavailable|not[ \t]+available|unknown|expired|incorrect|invalid)[.!?]?$/i;
+const GITHUB_TOKEN_BEFORE_ADJACENT_SECRET_FIELD_RE =
+  /^gh[pousr]_[A-Za-z0-9]{36}(?=(?:password|passwd|passphrase|secret|token|api[-_.]?key)=)/i;
+const ADJACENT_SECRET_FIELD_RE =
+  /^(?:password|passwd|passphrase|secret|token|api[-_.]?key)=/i;
+const NTLM_HASH_RE =
+  /\b(?:ntlm|nt[-_ ]?hash)[ \t]*[:=][ \t]*([0-9a-f]{32})\b/gi;
 
 function detectSecretAssignments(text: string): RawMatch[] {
   const matches: RawMatch[] = [];
@@ -547,13 +626,32 @@ function detectSecretAssignments(text: string): RawMatch[] {
         ? /(?:^|[{[,:])[ \t]*$/.test(beforeLabel)
         : /^[ \t]*(?:-[ \t]+)?$/.test(beforeLabel);
     const dollarsAreLiteral = colonKey && structuredKey;
-    const match = captureValue(text, index, assignment.index + assignment[0].length, {
-      powerShellAssignment: hasPowerShellVariablePrefix(text, index, assignment.index),
-      dollarsAreLiteral,
-    });
+    const valueStart = assignment.index + assignment[0].length;
+    const yamlBlock =
+      colonKey &&
+      structuredKey &&
+      isYamlBlockMarker(text.slice(valueStart, index.lineEnd[valueStart]));
+    const match = yamlBlock
+      ? captureYamlBlockValue(text, index, assignment.index, valueStart)
+      : captureValue(text, index, valueStart, {
+          powerShellAssignment: hasPowerShellVariablePrefix(text, index, assignment.index),
+          dollarsAreLiteral,
+        });
     if (match) {
       matches.push(match);
       assignmentRe.lastIndex = Math.max(assignmentRe.lastIndex, match.end);
+      if (/^gh[pousr]_[A-Za-z0-9]{36}$/i.test(match.value)) {
+        const adjacentField = ADJACENT_SECRET_FIELD_RE.exec(
+          text.slice(match.end, index.lineEnd[match.end]),
+        );
+        if (adjacentField) {
+          const adjacentMatch = captureValue(text, index, match.end + adjacentField[0].length);
+          if (adjacentMatch) {
+            matches.push(adjacentMatch);
+            assignmentRe.lastIndex = Math.max(assignmentRe.lastIndex, adjacentMatch.end);
+          }
+        }
+      }
     }
   }
 
@@ -570,6 +668,34 @@ function detectSecretAssignments(text: string): RawMatch[] {
   while ((mysql = mysqlRe.exec(text)) !== null) {
     const match = captureValue(text, index, mysql.index + mysql[0].length, { cliToken: true });
     if (match) matches.push(match);
+  }
+
+  for (const pattern of [SSH_PASS_PASSWORD_RE, AZ_SERVICE_PRINCIPAL_PASSWORD_RE, NET_USE_PASSWORD_RE]) {
+    const commandRe = new RegExp(pattern.source, pattern.flags);
+    let command: RegExpExecArray | null;
+    while ((command = commandRe.exec(text)) !== null) {
+      const match = captureValue(text, index, command.index + command[0].length, { cliToken: true });
+      if (match && match.value !== '*') matches.push(match);
+    }
+  }
+
+  const tempPasswordRe = new RegExp(TEMP_PASSWORD_PROSE_RE.source, TEMP_PASSWORD_PROSE_RE.flags);
+  let tempPassword: RegExpExecArray | null;
+  while ((tempPassword = tempPasswordRe.exec(text)) !== null) {
+    const match = captureValue(text, index, tempPassword.index + tempPassword[0].length);
+    if (match && !PROSE_NON_SECRET_VALUE_RE.test(match.value)) matches.push(match);
+  }
+
+  const invalidPasswordRe = new RegExp(
+    INVALID_PASSWORD_PROSE_RE.source,
+    INVALID_PASSWORD_PROSE_RE.flags,
+  );
+  let invalidPassword: RegExpExecArray | null;
+  while ((invalidPassword = invalidPasswordRe.exec(text)) !== null) {
+    const match = captureValue(text, index, invalidPassword.index + invalidPassword[0].length, {
+      cliToken: true,
+    });
+    if (match && /[0-9!@#$%^&*_=+\\]/.test(match.value)) matches.push(match);
   }
 
   const xmlRe = new RegExp(XML_SECRET_RE.source, XML_SECRET_RE.flags);
@@ -599,6 +725,13 @@ function detectSecretAssignments(text: string): RawMatch[] {
     const start = tag.index + relativeStart;
     matches.push({ start, end: start + value.length, value, confidence: 'medium' });
   }
+
+  matches.push(
+    ...regexMatches(text, NTLM_HASH_RE, {
+      group: 1,
+      confidenceFor: () => 'high',
+    }),
+  );
 
   return matches;
 }

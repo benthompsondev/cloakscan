@@ -198,6 +198,25 @@ The results and reproductions are in
   the same machine. Two causes: a backwards `lastIndexOf('\r', …)` per match on
   LF-only text, and full-list overlap comparison.
 
+## v1.5.5 final public-share hardening
+
+- YAML credential fields using `|` or `>` redact the complete indented body.
+  The marker and indentation stay in place, and the match stops at the first
+  dedented field.
+- Common pasted credential forms now have direct coverage: `sshpass -p`, Azure
+  service-principal login, `net use`, curl basic auth, Python `auth=(...)`,
+  JavaScript `Buffer.from("user:password")`, and Redis URLs with no username.
+- Clear credential and infrastructure contexts cover literal `PSCredential`
+  usernames, `cmdkey` targets, labeled hosts, `.lab` hosts, Azure service
+  endpoints, Azure Storage account names, and labeled NTLM hashes. Bare account
+  names, public keys, and generic file digests are still left alone.
+- Obvious examples and templates stay readable. This includes
+  `{{ vault_password }}`, `<YOUR_API_KEY>`, `changeme`,
+  `xoxb-not-a-real-token`, and all-one-character Google-key examples.
+- Provider and overlap boundaries are tighter. Telegram tokens work inside the
+  canonical `/bot<TOKEN>/...` URL, and a classic GitHub token directly beside a
+  second credential field no longer swallows that field.
+
 ## Known boundaries
 
 - Regex protection is a careful heuristic, not a complete PowerShell parser.

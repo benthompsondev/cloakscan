@@ -41,6 +41,20 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.5.5" date="2026-08-29">
+      <description>
+        <p>
+          Redacts complete YAML credential blocks and common command, SDK,
+          connection-string, provider-token, username, and support-text
+          credential forms found during the final public-share campaign.
+        </p>
+        <p>
+          Leaves common documentation placeholders alone and keeps adjacent
+          credential fields separate so neither surrounding syntax nor a
+          second secret is lost.
+        </p>
+      </description>
+    </release>
     <release version="1.5.4" date="2026-08-28">
       <description>
         <p>
