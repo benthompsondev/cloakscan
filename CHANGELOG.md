@@ -2,13 +2,13 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.5.6] - 2026-08-29
 
 ### Fixed
 
-- Support text such as "The new password is required to be 12 characters long." is left alone. The temporary-password rule captures to the end of the line, and checking that whole run against the known non-secret words almost never matched, so ordinary sentences were replaced with a placeholder and reported as a high-confidence secret.
-- A basic-auth pair built only from variable references, like `curl -u "$USER:$TOKEN"`, keeps its variable names. `sshpass` and `PSCredential` already worked this way.
-- The scan summary reports how long the scan actually took. It was timing the React state update rather than the scan, so every scan showed 1 ms no matter how much text was pasted.
+- Ordinary password-policy and helpdesk sentences no longer produce phantom secret findings. Genuine temporary-password values still redact.
+- Curl basic-auth pairs made only from variable references, such as `curl -u "$USER:$TOKEN"`, are left unchanged. Literal credentials still redact.
+- The scan summary measures the actual scan work instead of the React state update, so its duration changes with the input.
 
 ## [1.5.5] - 2026-08-29
 

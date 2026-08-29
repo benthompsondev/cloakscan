@@ -41,6 +41,18 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.5.6" date="2026-08-29">
+      <description>
+        <p>
+          Leaves ordinary password-policy text and variable-only curl
+          credentials unchanged while continuing to redact literal values.
+        </p>
+        <p>
+          Reports the actual scan duration instead of the React state-update
+          time.
+        </p>
+      </description>
+    </release>
     <release version="1.5.5" date="2026-08-29">
       <description>
         <p>

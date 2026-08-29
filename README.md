@@ -7,9 +7,9 @@ A local-first tool for cleaning sensitive details out of scripts, logs, prompts,
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **[▶ Try the live demo](https://benthompsondev.github.io/cloakscan/)** — in your browser, nothing uploaded ·
-**[⬇ Download v1.5.5](https://github.com/benthompsondev/cloakscan/releases/latest)** — Windows setup / Linux AppImage / `.deb` ·
+**[⬇ Download v1.5.6](https://github.com/benthompsondev/cloakscan/releases/latest)** — Windows setup / Linux AppImage / `.deb` ·
 **[See a before & after](#what-the-output-looks-like)** ·
-**[Release notes](https://github.com/benthompsondev/cloakscan/releases/tag/v1.5.5)**
+**[Release notes](https://github.com/benthompsondev/cloakscan/releases/tag/v1.5.6)**
 
 ![CloakScan demo: load a synthetic sample, scan locally, build a Cloak List from suggestions, rescan, compare output modes, and open the export kit](docs/media/cloakscan-demo.gif)
 
@@ -73,7 +73,7 @@ Found something it missed? [Report a detector gap](https://github.com/benthompso
 
 ### Windows
 
-Download `CloakScan-Setup-1.5.5-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakscan/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
+Download `CloakScan-Setup-1.5.6-x64.exe` from [GitHub Releases](https://github.com/benthompsondev/cloakscan/releases/latest), open it, and follow the installer. It installs for the current Windows user and does not require Node, Rust, administrator rights, or an internet connection.
 
 The installer is currently unsigned, so Windows SmartScreen may show a warning. Verify the published SHA-256 checksum before running it.
 
@@ -85,7 +85,7 @@ For Debian 12, Ubuntu 22.04, or newer, install the `.deb`:
 
 ```bash
 cd ~/Downloads
-sudo apt install ./CloakScan_1.5.5_amd64.deb
+sudo apt install ./CloakScan_1.5.6_amd64.deb
 ```
 
 Launch it from your applications menu or run:
@@ -98,8 +98,8 @@ The AppImage is portable and does not install anything:
 
 ```bash
 cd ~/Downloads
-chmod +x CloakScan_1.5.5_amd64.AppImage
-./CloakScan_1.5.5_amd64.AppImage
+chmod +x CloakScan_1.5.6_amd64.AppImage
+./CloakScan_1.5.6_amd64.AppImage
 ```
 
 See [the Linux guide](docs/linux.md) for updates, uninstall steps, and troubleshooting.
@@ -183,7 +183,7 @@ Run `npm run check`. Lint, unit tests, typecheck, and build should all pass. `np
 
 ## Project status
 
-Current release: **v1.5.5**
+Current release: **v1.5.6**
 
 - The Portfolio Review Workspace ties the cleanup flow together: mapping suggestions, bulk actions, a Build Portfolio Cloak List flow, and a sanitization readiness summary.
 - Cloak List mappings pick a replacement strategy: code identifiers only, genericize everywhere, placeholder, or review lead only. Lists exported by 1.3 keep their old behavior on import.
