@@ -67,6 +67,8 @@ describe('a type annotation is not a secret value', () => {
     ['quoted literal', 'const c = { apiKey: "sk-live-abcdef123456" };', 'sk-live-abcdef123456'],
     ['unquoted literal', 'apiKey: hunter2-not-a-type', 'hunter2-not-a-type'],
     ['a value that merely starts with a type word', 'password: string-cheese-42', 'string-cheese-42'],
+    ['quoted type word', 'password: "string"', 'string'],
+    ['equals-assigned type word', 'apiKey=number', 'number'],
   ])('still redacts %s', (_name, source, secret) => {
     expect(clean(source)).not.toContain(secret);
   });

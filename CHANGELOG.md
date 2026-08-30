@@ -2,7 +2,7 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.5.7] - 2026-08-30
 
 ### Changed
 
@@ -11,7 +11,7 @@ This file tracks the public CloakScan releases. The format follows [Keep a Chang
 ### Fixed
 
 - A credential named in support text is caught when a qualifier sits between the cue and the noun, and when the noun stands alone: "the current prod password is X", "the secret is X". The value now stops at the end of its clause or sentence instead of taking the rest of the line, so the words after it survive.
-- A type annotation is no longer read as a secret. `apiKey: string;` was redacted, which turned valid TypeScript into code that does not parse.
+- A type annotation is no longer read as a secret. `apiKey: string;` was redacted, which turned valid TypeScript into code that does not parse. Quoted and equals-assigned literal values still redact.
 - A pinned package version is no longer read as an email address. `react@18.2.0` was redacted because the domain part allowed an all-numeric last label, and no TLD is numeric.
 - `docs/linux.md` gave the wrong uninstall command. The Debian package is `cloak-scan`.
 

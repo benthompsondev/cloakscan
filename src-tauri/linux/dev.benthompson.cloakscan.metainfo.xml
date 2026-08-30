@@ -41,6 +41,20 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.5.7" date="2026-08-30">
+      <description>
+        <p>
+          Keeps TypeScript credential-field annotations and pinned package
+          versions intact while still redacting literal credentials and email
+          addresses.
+        </p>
+        <p>
+          Catches labeled credentials in support prose without removing the
+          words that follow them, removes the footer byline, and corrects the
+          Debian uninstall command.
+        </p>
+      </description>
+    </release>
     <release version="1.5.6" date="2026-08-29">
       <description>
         <p>

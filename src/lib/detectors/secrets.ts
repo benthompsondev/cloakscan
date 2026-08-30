@@ -284,10 +284,12 @@ interface ValueContext {
    * character. `{"password":"pa$$word"}` is not a PowerShell interpolation.
    */
   dollarsAreLiteral?: boolean;
+  /** True only for an unquoted colon field, the shape used by TS annotations. */
+  typeAnnotationCandidate?: boolean;
 }
 
 function isLikelySecretValue(value: string, context: ValueContext = {}): boolean {
-  const { quote = null, dollarsAreLiteral = false } = context;
+  const { quote = null, dollarsAreLiteral = false, typeAnnotationCandidate = false } = context;
   if (
     LOOKS_REDACTED.test(value) ||
     NUMBERED_BRACKET_PLACEHOLDER.test(value) ||
@@ -308,7 +310,7 @@ function isLikelySecretValue(value: string, context: ValueContext = {}): boolean
     }
   }
   if (BOOLEANISH.has(value.toLowerCase())) return false;
-  if (isTypeAnnotation(value)) return false;
+  if (typeAnnotationCandidate && !quote && isTypeAnnotation(value)) return false;
   // A PowerShell cmdlet, not a value: Get-Secret, New-Guid, Generate-Password.
   // Capitalized on both sides, because `unquoted-value`, `correct-horse`, and
   // `my-secret-value` are hyphenated passwords, not commands. Lowercase
@@ -503,9 +505,10 @@ function captureValue(
     cliToken?: boolean;
     powerShellAssignment?: boolean;
     dollarsAreLiteral?: boolean;
+    typeAnnotationCandidate?: boolean;
   } = {},
 ): RawMatch | null {
-  const { dollarsAreLiteral } = options;
+  const { dollarsAreLiteral, typeAnnotationCandidate } = options;
   const endOfLineAt = index.lineEnd[valueStart];
   // An unquoted value can never leave the string literal it sits inside.
   const enclosing = enclosingQuote(index, valueStart);
@@ -520,7 +523,12 @@ function captureValue(
   if (quote === '"' || quote === "'") {
     const valueEnd = findClosingQuote(text, valueStart, endOfLineAt);
     const value = text.slice(valueStart + 1, valueEnd);
-    if (!value || !isLikelySecretValue(value, { quote, dollarsAreLiteral })) return null;
+    if (
+      !value ||
+      !isLikelySecretValue(value, { quote, dollarsAreLiteral, typeAnnotationCandidate })
+    ) {
+      return null;
+    }
     return { start: valueStart + 1, end: valueEnd, value, confidence: 'medium' };
   }
 
@@ -539,7 +547,7 @@ function captureValue(
     const space = windowed.search(/[ \t]/);
     const token = space === -1 ? windowed : windowed.slice(0, space);
     if (!token || looksExecutableValue(token)) return null;
-    if (!isLikelySecretValue(token, { dollarsAreLiteral })) return null;
+    if (!isLikelySecretValue(token, { dollarsAreLiteral, typeAnnotationCandidate })) return null;
     return { start: valueStart, end: valueStart + token.length, value: token, confidence: 'medium' };
   }
   if (looksExecutableValue(windowed)) return null;
@@ -556,7 +564,9 @@ function captureValue(
   while (valueEnd > valueStart && /[ \t]/.test(text[valueEnd - 1])) valueEnd -= 1;
   const value = text.slice(valueStart, valueEnd);
   if (options.powerShellAssignment) return null;
-  if (!value || !isLikelySecretValue(value, { dollarsAreLiteral })) return null;
+  if (!value || !isLikelySecretValue(value, { dollarsAreLiteral, typeAnnotationCandidate })) {
+    return null;
+  }
   return { start: valueStart, end: valueEnd, value, confidence: 'medium' };
 }
 
@@ -706,10 +716,11 @@ function detectSecretAssignments(text: string): RawMatch[] {
       isYamlBlockMarker(text.slice(valueStart, index.lineEnd[valueStart]));
     const match = yamlBlock
       ? captureYamlBlockValue(text, index, assignment.index, valueStart)
-      : captureValue(text, index, valueStart, {
-          powerShellAssignment: hasPowerShellVariablePrefix(text, index, assignment.index),
-          dollarsAreLiteral,
-        });
+         : captureValue(text, index, valueStart, {
+           powerShellAssignment: hasPowerShellVariablePrefix(text, index, assignment.index),
+           dollarsAreLiteral,
+           typeAnnotationCandidate: colonKey,
+         });
     if (match) {
       matches.push(match);
       assignmentRe.lastIndex = Math.max(assignmentRe.lastIndex, match.end);
