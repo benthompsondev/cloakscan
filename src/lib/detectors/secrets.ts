@@ -210,6 +210,27 @@ const COMMON_BRACKET_PLACEHOLDER = /^\[(?:redacted|secret|hidden|removed)\]$/i;
 const TEMPLATE_PLACEHOLDER =
   /^(?:\{\{[^{}\r\n]{1,200}\}\}|<(?:YOUR|MY|INSERT|REPLACE)[-_ A-Z0-9]{1,80}>|change[-_ ]?me)$/i;
 
+/**
+ * `apiKey: string;` declares a type, it does not set a credential. Redacting
+ * the type keyword turned valid TypeScript into code that no longer parses.
+ * A union is only a type if every member is, so `secret: string | null` is a
+ * declaration while `password: string-cheese-42` stays a value.
+ */
+const TYPE_KEYWORD_RE =
+  /^(?:string|number|boolean|bigint|symbol|object|any|unknown|never|void|null|undefined|true|false|Date|Buffer|RegExp)(?:\[\])?$/i;
+
+function isTypeAnnotation(value: string): boolean {
+  // On an inline object type the value runs past the annotation, as in
+  // `{ apiKey: string; }`, so read up to the closing brace and drop the
+  // member separator before judging what is left.
+  const annotation = (/^[^}]*/.exec(value.trim())?.[0] ?? '').replace(/[;,]\s*$/, '').trim();
+  if (!annotation) return false;
+  return annotation
+    .split('|')
+    .map((member) => member.trim())
+    .every((member) => TYPE_KEYWORD_RE.test(member));
+}
+
 /** Config words that follow pass/secret-style keys but are not credentials. */
 const BOOLEANISH = new Set([
   'true', 'false', 'yes', 'no', 'on', 'off', 'null', 'none', 'default', 'auto',
@@ -287,6 +308,7 @@ function isLikelySecretValue(value: string, context: ValueContext = {}): boolean
     }
   }
   if (BOOLEANISH.has(value.toLowerCase())) return false;
+  if (isTypeAnnotation(value)) return false;
   // A PowerShell cmdlet, not a value: Get-Secret, New-Guid, Generate-Password.
   // Capitalized on both sides, because `unquoted-value`, `correct-horse`, and
   // `my-secret-value` are hyphenated passwords, not commands. Lowercase
@@ -591,14 +613,48 @@ const AZ_SERVICE_PRINCIPAL_PASSWORD_RE =
   /\baz[ \t]+login\b(?=[^\r\n]{0,200}--service-principal\b)[^\r\n]{0,200}?[ \t]-p[ \t]+/gi;
 const NET_USE_PASSWORD_RE =
   /\bnet[ \t]+use\b[^\r\n]{0,256}?[ \t]\/user:[^\s]+[ \t]+/gi;
+/**
+ * A credential named in support text: "the temporary password is X", "the
+ * current prod password is X", "the secret is X".
+ *
+ * The qualifier is optional and may repeat, because requiring it to sit
+ * directly against the noun missed both "current prod password is" and the
+ * bare "the secret is". The noun must be followed immediately by is/was, so
+ * "the secret to success is boring verification" never enters this rule.
+ */
 const TEMP_PASSWORD_PROSE_RE =
-  /\b(?:temp(?:orary)?|current|new|default)[ \t]+(?:password|passphrase)[ \t]+(?:is|was)[ \t]+/gi;
+  /\b(?:(?:temp(?:orary)?|current|new|old|default|initial|prod(?:uction)?|admin(?:istrator)?|root|master|shared)[ \t]+){0,2}(?:password|passphrase|secret)[ \t]+(?:is|was)[ \t]+/gi;
 const INVALID_PASSWORD_PROSE_RE =
   /\b(?:invalid|rejected)[ \t]+(?:password|credential)[ \t]+/gi;
 const PROSE_NON_SECRET_VALUE_RE =
   /^(?:unavailable|not[ \t]+available|unknown|expired|incorrect|invalid)[.!?]?$/i;
 /** A credential quoted in support text carries a digit or symbol; a word does not. */
 const CREDENTIAL_SHAPED_RE = /[0-9!@#$%^&*_=+\\]/;
+/**
+ * Where a credential named in prose stops. Free text carries no field
+ * separator, so the captured value ran to the end of the line and took the
+ * rest of the sentence with it: "... is Wint3r2026, please rotate it."
+ * A clause break ends the value; a plain space cannot, because
+ * "temp password is Spring! 2026" is a single value.
+ */
+const PROSE_CLAUSE_END_RE = /[,;]\s|\s[-–—]\s/;
+/**
+ * A following sentence also ends the value: "... is Password123! Also see
+ * alice@example.com." Requiring a capital letter after the stop keeps
+ * "temp password is Spring! 2026" whole, where the `!` is part of the value.
+ */
+const PROSE_SENTENCE_END_RE = /[.!?]\s+(?=[A-Z])/;
+
+function proseValueEnd(value: string): number {
+  const clause = PROSE_CLAUSE_END_RE.exec(value);
+  const sentence = PROSE_SENTENCE_END_RE.exec(value);
+  const ends: number[] = [];
+  if (clause) ends.push(clause.index);
+  // Keep the stop with the value; `!` and `?` are ordinary password characters.
+  if (sentence) ends.push(sentence.index + 1);
+  return ends.length > 0 ? Math.min(...ends) : value.length;
+}
+
 /**
  * Prose gives the value no delimiter, so it runs to the end of the line.
  * Judging that whole run against the non-secret list above almost never
@@ -609,6 +665,8 @@ const CREDENTIAL_SHAPED_RE = /[0-9!@#$%^&*_=+\\]/;
 function isProseCredentialValue(value: string): boolean {
   const [first = ''] = value.split(/[ \t]/, 1);
   if (PROSE_NON_SECRET_VALUE_RE.test(value) || PROSE_NON_SECRET_VALUE_RE.test(first)) return false;
+  // A bare count continues the sentence: "the password is 12 characters long".
+  if (/^\d+[.,;!?]?$/.test(first)) return false;
   return CREDENTIAL_SHAPED_RE.test(first);
 }
 
@@ -698,7 +756,11 @@ function detectSecretAssignments(text: string): RawMatch[] {
   let tempPassword: RegExpExecArray | null;
   while ((tempPassword = tempPasswordRe.exec(text)) !== null) {
     const match = captureValue(text, index, tempPassword.index + tempPassword[0].length);
-    if (match && isProseCredentialValue(match.value)) matches.push(match);
+    if (!match) continue;
+    const value = match.value.slice(0, proseValueEnd(match.value));
+    if (value && isProseCredentialValue(value)) {
+      matches.push({ ...match, end: match.start + value.length, value });
+    }
   }
 
   const invalidPasswordRe = new RegExp(

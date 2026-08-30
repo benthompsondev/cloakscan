@@ -627,8 +627,8 @@ export const OUTSIDER_CORPUS: readonly CorpusCase[] = Object.freeze([
     format: 'prose',
     kind: 'secret',
     input: 'The staging password is Wint3r2026, please rotate it.',
-    expected: 'The staging password is Wint3r2026, please rotate it.',
-    note: 'AMBIGUOUS, called as no-redact: "password is X" has no field separator. Catching it means guessing where the value ends in free text, and "the password is stored in Vault" would redact "stored". Recorded as a known limit rather than a defect.',
+    expected: 'The staging password is [SECRET_1], please rotate it.',
+    note: 'RE-ADJUDICATED 2026-08-30, was called as no-redact. Both original reasons are now answered: a sentence that carries on is rejected by the credential-shape guard added in v1.5.6, and the value stops at the clause break instead of eating the line. An outsider campaign independently reported this shape as a miss, so the ambiguity is resolved toward redacting.',
   },
   {
     id: 'prose-password-policy-control',

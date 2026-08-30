@@ -33,7 +33,7 @@ CloakScan from your application menu or with `cloakscan`.
   out, download the new `.deb` and install it the same way — it replaces the
   old version. The in-app **Check for updates** can still tell you a newer
   version exists and opens the GitHub release page for the new package.
-- **Uninstalling:** `sudo apt remove cloak-guard`. Saved preferences (if you
+- **Uninstalling:** `sudo apt remove cloak-scan`. Saved preferences (if you
   opted in) live under `~/.local/share/dev.benthompson.cloakscan/` and the
   WebKitGTK engine profile under `~/.cache/`; remove those folders yourself
   if you want them gone, or use *Clear preferences* inside the app first.
@@ -48,7 +48,7 @@ KDE Discover can read the bundled AppStream details. The supported uninstall
 command remains:
 
 ```bash
-sudo apt remove cloak-guard
+sudo apt remove cloak-scan
 ```
 
 ## Run the AppImage (portable)

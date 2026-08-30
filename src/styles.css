@@ -1155,12 +1155,6 @@ body {
   margin-left: auto;
 }
 
-.footer-author {
-  margin-left: auto;
-  color: inherit;
-  white-space: nowrap;
-}
-
 /* ---------- settings ---------- */
 
 .settings {
@@ -2541,12 +2535,6 @@ body {
   .footer {
     padding-left: 16px;
     padding-right: 16px;
-  }
-
-  .footer-author {
-    margin-left: 0;
-    white-space: normal;
-    overflow-wrap: anywhere;
   }
 
   .finding-row {
