@@ -205,6 +205,16 @@ Issues and pull requests are welcome. Use synthetic examples only and read [CONT
 
 Six synthetic files under [examples/stress-tests](examples/stress-tests) are available for longer manual checks covering PowerShell, support logs, mixed configuration, custom organization terms, name/organization detection, and provider token shapes.
 
+## More of my work
+
+The "script going into a portfolio" case above is
+[Enterprise PowerShell Systems](https://github.com/benthompsondev/enterprise-powershell-systems).
+That repo is why Portfolio-code mode is PowerShell-aware.
+
+The other local-first apps are [SignalSpace Finance](https://github.com/benthompsondev/ledger-local-finance)
+and [UsageLoop](https://github.com/benthompsondev/usageloop). The rest is on
+[benthompsondev.github.io](https://benthompsondev.github.io/).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
