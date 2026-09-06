@@ -215,6 +215,9 @@ The other local-first apps are [SignalSpace Finance](https://github.com/benthomp
 and [UsageLoop](https://github.com/benthompsondev/usageloop). The rest is on
 [benthompsondev.github.io](https://benthompsondev.github.io/).
 
+If CloakScan saved you time, you can
+[support continued development on GitHub Sponsors](https://github.com/sponsors/benthompsondev).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
