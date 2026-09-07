@@ -10,7 +10,7 @@ const API_KEY_PATTERNS: RegExp[] = [
   // lookahead instead of `\b`: underscore is a regex word character, so `\b`
   // would miss an otherwise complete token immediately followed by `_more`.
   /\bsk[-_](?:live|test)[-_][A-Za-z0-9]{8,}(?![A-Za-z0-9])/g, // Stripe-style
-  /\bsk-proj-[A-Za-z0-9_-]{20,}\b/g, // OpenAI project key
+  /\bsk-proj-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])/g, // OpenAI project key
   /\bsk-[A-Za-z0-9]{20,}(?![A-Za-z0-9])/g, // OpenAI-style
   /\b(?:AKIA|ASIA)[0-9A-Z]{16}(?![0-9A-Z])/g, // AWS long-term or temporary access key ID
   // GitHub tokens. The body accepts underscores so a token butted against more
@@ -18,27 +18,26 @@ const API_KEY_PATTERNS: RegExp[] = [
   // [A-Za-z0-9] body the trailing \b could never be satisfied before a `_`, so
   // `ghp_<36>_more` produced no finding at all rather than a partial one.
   /\bgh[pousr]_(?:[A-Za-z0-9]{36}(?=(?:password|passwd|passphrase|secret|token|api[-_.]?key)=)|[A-Za-z0-9_]{20,}\b)/g,
-  /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g, // Slack tokens
-  /\bAIza[0-9A-Za-z_-]{30,}\b/g, // Google API key
-  /\bsk-ant-(?:api03-)?[A-Za-z0-9_-]{20,}\b/g, // Anthropic API key
-  /\bglpat-[A-Za-z0-9_-]{20,}\b/g, // GitLab personal/project access token
+  /\bxox[baprs]-[A-Za-z0-9-]{10,}(?![A-Za-z0-9-])/g, // Slack tokens
+  /\bAIza[0-9A-Za-z_-]{30,}(?![0-9A-Za-z_-])/g, // Google API key
+  /\bsk-ant-(?:api03-)?[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])/g, // Anthropic API key
+  /\bglpat-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])/g, // GitLab personal/project access token
   /\bgithub_pat_[A-Za-z0-9_]{22,}\b/g, // GitHub fine-grained token
   /\b[rp]k_(?:live|test)_[A-Za-z0-9]{10,}\b/g, // Stripe restricted/publishable key
   /\b(?:AC|SK)[0-9a-fA-F]{32}\b/g, // Twilio account/API key SID
   /\bSG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}\b/g, // SendGrid API key
   /\bnpm_[A-Za-z0-9]{36}(?![A-Za-z0-9])/g, // npm access token
-  /\bya29\.[A-Za-z0-9_-]{20,}\b/g, // Google OAuth access token
+  /\bya29\.[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])/g, // Google OAuth access token
   /\bAccountKey=[A-Za-z0-9+/]{86,}==/g, // Azure Storage account key assignment
   /https:\/\/hooks\.slack\.com\/services\/T[A-Za-z0-9]{8,}\/B[A-Za-z0-9]{8,}\/[A-Za-z0-9_-]{20,}/g, // Slack incoming webhook
-  /\bAuthorization:[ \t]*Basic[ \t]+[A-Za-z0-9+/]{12,}={0,2}/gi, // HTTP Basic authorization header
   /\bdop_v1_[0-9a-f]{64}\b/g, // DigitalOcean personal access token
-  /\bpypi-[A-Za-z0-9_-]{50,}\b/g, // PyPI upload token
-  /\bdckr_pat_[A-Za-z0-9_-]{20,}\b/g, // Docker access token
+  /\bpypi-[A-Za-z0-9_-]{50,}(?![A-Za-z0-9_-])/g, // PyPI upload token
+  /\bdckr_pat_[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])/g, // Docker access token
   /\bhf_[A-Za-z0-9]{30,}(?![A-Za-z0-9])/g, // Hugging Face user access token
-  /\bhvs\.[A-Za-z0-9_-]{20,}\b/g, // HashiCorp Vault service token
+  /\bhvs\.[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])/g, // HashiCorp Vault service token
   /\bdapi[0-9a-f]{32}(?![0-9a-f])/g, // Databricks personal access token
   /\bshp(?:at|ca|pa|ss)_[0-9a-f]{32}\b/g, // Shopify access tokens
-  /\bglrt-[A-Za-z0-9_-]{20,}\b/g, // GitLab runner authentication token
+  /\bglrt-[A-Za-z0-9_-]{20,}(?![A-Za-z0-9_-])/g, // GitLab runner authentication token
   /\bnfp_[A-Za-z0-9]{30,}\b/g, // Netlify personal access token
   /\bxkeysib-[0-9a-f]{64}\b/g, // Brevo API key
   /\bAGE-SECRET-KEY-1[A-Z0-9]{58}\b/g, // age identity secret key
@@ -49,6 +48,7 @@ const API_KEY_PATTERNS: RegExp[] = [
 ];
 
 const API_KEY_PLACEHOLDER_RE = /(?:not[-_ ]?a[-_ ]?real|placeholder|insert[-_ ]?key)/i;
+const BASIC_HEADER_RE = /\b(?:Proxy-)?Authorization["']?[ \t]*:[ \t]*["']?(Basic[ \t]+[A-Za-z0-9+/]+={0,2})/gi;
 
 function isApiKeyPlaceholder(value: string): boolean {
   return API_KEY_PLACEHOLDER_RE.test(value) || /^AIzaA+$/i.test(value);
@@ -63,13 +63,15 @@ export const apiKeyDetector: Detector = {
   priority: 92,
   explanation: 'Matches a known API key format. Leaked keys grant direct account access.',
   detect: (text) =>
-    API_KEY_PATTERNS.flatMap((re) => regexMatches(text, re)).filter(
-      (match) => !isApiKeyPlaceholder(match.value),
-    ),
+    [
+      ...API_KEY_PATTERNS.flatMap((re) => regexMatches(text, re)),
+      ...regexMatches(text, BASIC_HEADER_RE, { group: 1 }),
+    ].filter((match) => !isApiKeyPlaceholder(match.value)),
 };
 
 /** "Bearer <token>" — the scheme word plus the credential that follows it. */
-const BEARER_RE = /\bBearer\s+[A-Za-z0-9\-._~+/]{8,}=*/g;
+const BEARER_RE = /\bBearer[ \t]+[A-Za-z0-9\-._~+/]{8,}=*/gi;
+const BEARER_HEADER_RE = /\b(?:Proxy-)?Authorization["']?[ \t]*:[ \t]*["']?(Bearer[ \t]+[A-Za-z0-9\-._~+/]+=*)/gi;
 
 export const bearerTokenDetector: Detector = {
   id: 'bearer-token',
@@ -79,7 +81,7 @@ export const bearerTokenDetector: Detector = {
   label: 'TOKEN',
   priority: 95,
   explanation: 'Authorization bearer tokens allow anyone holding them to act as the user.',
-  detect: (text) => regexMatches(text, BEARER_RE),
+  detect: (text) => [...regexMatches(text, BEARER_RE), ...regexMatches(text, BEARER_HEADER_RE, { group: 1 })],
 };
 
 /**
@@ -190,9 +192,9 @@ const CLI_SECRET_RE = new RegExp(
 const MYSQL_INLINE_PASSWORD_RE =
   /\bmysql(?:dump|admin|show|check|import)?\b[^\r\n]{0,200}?[ \t]-p(?=[^\s-])/g;
 
-/** Simple same-line XML secret elements. Attributes are deliberately not crossed. */
+/** XML secret text, including line breaks. Nested elements are not crossed. */
 const XML_SECRET_RE = new RegExp(
-  String.raw`<(${SECRET_KEY_PATTERN})(?:[ \t]+[^>\r\n]*)?>([^<\r\n]+)</\1[ \t]*>`,
+  String.raw`<(${SECRET_KEY_PATTERN})(?:[ \t]+[^>\r\n]*)?>([^<]+)</\1[ \t]*>`,
   'gi',
 );
 
@@ -284,12 +286,14 @@ interface ValueContext {
    * character. `{"password":"pa$$word"}` is not a PowerShell interpolation.
    */
   dollarsAreLiteral?: boolean;
+  /** JSON strings do not interpolate, even when their whole value is ${...}. */
+  jsonString?: boolean;
   /** True only for an unquoted colon field, the shape used by TS annotations. */
   typeAnnotationCandidate?: boolean;
 }
 
 function isLikelySecretValue(value: string, context: ValueContext = {}): boolean {
-  const { quote = null, dollarsAreLiteral = false, typeAnnotationCandidate = false } = context;
+  const { quote = null, dollarsAreLiteral = false, jsonString = false, typeAnnotationCandidate = false } = context;
   if (
     LOOKS_REDACTED.test(value) ||
     NUMBERED_BRACKET_PLACEHOLDER.test(value) ||
@@ -299,7 +303,7 @@ function isLikelySecretValue(value: string, context: ValueContext = {}): boolean
   ) {
     return false;
   }
-  if (quote !== "'" && !CRYPT_HASH_RE.test(value)) {
+  if (!jsonString && quote !== "'" && !CRYPT_HASH_RE.test(value)) {
     if (WHOLE_EXPANSION_RE.test(value) || EMBEDDED_EXPANSION_RE.test(value)) return false;
     if (
       !dollarsAreLiteral &&
@@ -505,10 +509,11 @@ function captureValue(
     cliToken?: boolean;
     powerShellAssignment?: boolean;
     dollarsAreLiteral?: boolean;
+    jsonString?: boolean;
     typeAnnotationCandidate?: boolean;
   } = {},
 ): RawMatch | null {
-  const { dollarsAreLiteral, typeAnnotationCandidate } = options;
+  const { dollarsAreLiteral, jsonString, typeAnnotationCandidate } = options;
   const endOfLineAt = index.lineEnd[valueStart];
   // An unquoted value can never leave the string literal it sits inside.
   const enclosing = enclosingQuote(index, valueStart);
@@ -520,12 +525,37 @@ function captureValue(
     if (close < endOfLineAt && closes) endOfLine = close;
   }
   const quote = text[valueStart];
+  // Explicit multiline delimiters must cloak their complete body. A line-only
+  // capture would make the output look sanitized while leaving later lines intact.
+  const here = /^@(["'])[ \t]*\r?\n/.exec(text.slice(valueStart, endOfLineAt + 2));
+  const triple = text.startsWith('"""', valueStart) || text.startsWith("'''", valueStart);
+  if (here || triple) {
+    const bodyStart = valueStart + (here ? here[0].length : 3);
+    const delimiter = here ? `${here[1]}@` : text.slice(valueStart, valueStart + 3);
+    let bodyEnd: number;
+    if (here) {
+      const closing = new RegExp(`^${delimiter}[ \\t]*\\r?$`, 'gm');
+      closing.lastIndex = bodyStart;
+      bodyEnd = closing.exec(text)?.index ?? text.length;
+      while (bodyEnd > bodyStart && /[\r\n]/.test(text[bodyEnd - 1])) bodyEnd -= 1;
+    } else {
+      bodyEnd = text.indexOf(delimiter, bodyStart);
+      if (bodyEnd === -1) bodyEnd = text.length;
+    }
+    const value = text.slice(bodyStart, bodyEnd);
+    const bodyQuote = (here?.[1] ?? quote) === "'" ? "'" : '"';
+    if (!value || !isLikelySecretValue(value, { quote: bodyQuote, dollarsAreLiteral, jsonString })) return null;
+    return { start: bodyStart, end: bodyEnd, value, confidence: 'medium' };
+  }
   if (quote === '"' || quote === "'") {
-    const valueEnd = findClosingQuote(text, valueStart, endOfLineAt);
+    // If a literal actually closes on a later line, include all of it. An
+    // unclosed ordinary quote retains the existing same-line fallback.
+    const closing = findClosingQuote(text, valueStart, text.length);
+    const valueEnd = closing < text.length ? closing : endOfLineAt;
     const value = text.slice(valueStart + 1, valueEnd);
     if (
       !value ||
-      !isLikelySecretValue(value, { quote, dollarsAreLiteral, typeAnnotationCandidate })
+      !isLikelySecretValue(value, { quote, dollarsAreLiteral, jsonString, typeAnnotationCandidate })
     ) {
       return null;
     }
@@ -544,8 +574,9 @@ function captureValue(
     // rest of the line instead read `--password secret --verbose` as a command
     // with a flag and dropped the secret.
     if (/^(?:--?|\/)[A-Za-z]/.test(windowed)) return null;
-    const space = windowed.search(/[ \t]/);
-    const token = space === -1 ? windowed : windowed.slice(0, space);
+    let tokenEnd = valueStart;
+    while (tokenEnd < endOfLine && !/[ \t]/.test(text[tokenEnd])) tokenEnd += 1;
+    const token = text.slice(valueStart, tokenEnd);
     if (!token || looksExecutableValue(token)) return null;
     if (!isLikelySecretValue(token, { dollarsAreLiteral, typeAnnotationCandidate })) return null;
     return { start: valueStart, end: valueStart + token.length, value: token, confidence: 'medium' };
@@ -615,7 +646,7 @@ function captureYamlBlockValue(
 }
 
 function isYamlBlockMarker(value: string): boolean {
-  return /^[|>](?:[1-9][+-]?|[+-][1-9]?)?$/.test(value.trim());
+  return /^[|>](?:[1-9][+-]?|[+-][1-9]?)?(?:[ \t]+#.*)?$/.test(value.trim());
 }
 
 const SSH_PASS_PASSWORD_RE = /\bsshpass\b[^\r\n]{0,200}?[ \t]-p[ \t]+/gi;
@@ -719,6 +750,7 @@ function detectSecretAssignments(text: string): RawMatch[] {
          : captureValue(text, index, valueStart, {
            powerShellAssignment: hasPowerShellVariablePrefix(text, index, assignment.index),
            dollarsAreLiteral,
+           jsonString: dollarsAreLiteral && assignment[1] === '"',
            typeAnnotationCandidate: colonKey,
          });
     if (match) {

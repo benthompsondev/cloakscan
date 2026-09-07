@@ -4,7 +4,7 @@ CloakScan is intentionally small. Text goes in, enabled rules inspect it in memo
 
 ## Scan pipeline
 
-The scanner first protects PowerShell regex and code-shaped secret expressions that should stay as code. It then runs only the detectors enabled by the active configuration. When findings overlap, the winner is chosen by priority, confidence, match length, and source position, in that order.
+The scanner runs only the detectors enabled by the active configuration. It protects PowerShell regex syntax from broad text rules while still detecting recognizable credentials inside it. Overlapping redactable matches first receive their combined span, including across categories, so a winning token cannot leave part of a confidential URL visible. The winner is chosen by priority, confidence, match length, and source position, in that order. Review leads never enlarge a redaction.
 
 Repeated values receive stable placeholders, so the same email becomes `[EMAIL_1]` everywhere it appears. The final pass copies the original text byte-for-byte between replacements. That keeps indentation, line endings, CSV columns, and surrounding code intact.
 

@@ -18,6 +18,7 @@
 ## What CloakScan does NOT guarantee
 
 - **Complete detection.** Detectors are pattern-based. They will miss sensitive data that doesn't match a known shape (odd token formats, names, free-text secrets, non-Latin identifiers). **Automated detection can miss sensitive information. Review before sharing.**
+- **Clinical de-identification.** Labeled health identifiers are covered by Strict, Maximum and the Canada/US packs. This does not make clinical notes or patient table exports safe to share. Unlabeled identifiers, diagnoses, care dates, locations and combinations of details can still identify someone. Review them manually, even when the scanner reports no flagged items.
 - **False-positive freedom.** Some findings (Jira-style IDs, loopback IPs) are flagged at lower confidence and may be harmless. That is why every finding can be toggled off.
 - **Protection outside the app.** CloakScan cannot control your clipboard history, clipboard-syncing tools, or what happens to text after you paste it elsewhere.
 - **Platform networking silence.** CloakScan cannot guarantee that your browser, Microsoft's WebView2 runtime (Windows), or WebKitGTK (Linux) never perform their own platform networking. CloakScan itself only requests update data after a desktop user clicks **Check for updates**, and never includes user content in that request.

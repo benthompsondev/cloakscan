@@ -211,7 +211,7 @@ export const RULE_INFO: Record<string, RuleInfo> = {
     sample: 'SIN: 123 456 782',
   },
   'health-identifier': {
-    detects: 'Identifiers in explicit MRN/HealthCard/HCN/PHN/PatientID fields (6-15 characters, at least four digits). Strict profile only.',
+    detects: 'Identifiers in explicit MRN, medical record, HealthCard, HCN, PHN, PatientID, NHS Number and OHIP fields, including JSON keys and grouped numbers with version codes. At least six characters and four digits. Strict profile only.',
     falsePositives: 'Synthetic or test chart numbers in those fields.',
     confidence: 'High — labeled clinical fields are rarely anything else.',
     sample: 'MRN: 12-345678',

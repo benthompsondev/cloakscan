@@ -157,7 +157,9 @@ describe('secret detectors', () => {
       'https://hooks.slack.com/services/T01234567/B01234567/FAKEWEBHOOKTOKEN123456789012',
       'Authorization: Basic ZGVtby11c2VyOmZha2UtcGFzc3dvcmQ=',
     ];
-    expect(values(apiKeyDetector, secrets.join('\n'))).toEqual(secrets);
+    expect(values(apiKeyDetector, secrets.join('\n'))).toEqual(
+      secrets.map((value) => value.replace(/^Authorization: /, '')),
+    );
   });
 
   it.each([

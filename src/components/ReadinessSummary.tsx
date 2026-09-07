@@ -39,6 +39,10 @@ export function ReadinessSummary({ report, outputMode }: ReadinessSummaryProps) 
           ))}
         </ul>
       )}
+      <p className="muted readiness-note">
+        Clinical narratives, unlabeled patient data, and confidential project details need manual
+        review. Use Strict or Maximum for labeled health identifiers and personal information.
+      </p>
       {report.replacementCount > 0 && (
         <p className="muted readiness-note">
           {outputMode === 'portfolio-code'

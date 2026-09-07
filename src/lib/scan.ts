@@ -74,7 +74,7 @@ export function resolveOverlaps(candidates: Candidate[]): Candidate[] {
 }
 
 /**
- * Give every same-category candidate in a run of overlapping matches the full
+ * Give every redactable candidate in a run of overlapping matches the full
  * span of that run.
  *
  * Overlap resolution keeps exactly one candidate per region, so the losers'
@@ -89,13 +89,15 @@ export function resolveOverlaps(candidates: Candidate[]): Candidate[] {
  * `[10,110]` overlapping, a win by `[0,105]` left `[105,110)` visible. Merging
  * the whole run is what actually holds the invariant.
  *
- * Same category only: a hostname inside a path is a different question, and
- * widening across categories would relabel findings misleadingly.
+ * Include cross-category overlaps: a token inside an internal URL must not
+ * defeat removal of the confidential host and path. Review leads cannot grow
+ * a redaction because they are deliberately inert. The winning label describes
+ * the highest-priority finding; the value covers the whole sensitive region.
  */
 function coverContainingMatches(text: string, candidates: Candidate[]): Candidate[] {
   const byCategory = new Map<string, Candidate[]>();
   for (const candidate of candidates) {
-    const category = candidate.category ?? candidate.detector.category;
+    const category = (candidate.reviewLead ?? candidate.detector.reviewLead) ? 'review' : 'redact';
     const bucket = byCategory.get(category);
     if (bucket) bucket.push(candidate);
     else byCategory.set(category, [candidate]);
@@ -109,9 +111,16 @@ function coverContainingMatches(text: string, candidates: Candidate[]): Candidat
     let end = -1;
     const flush = () => {
       if (run.length < 2) return;
+      const containsSecret = run.some((member) => (member.category ?? member.detector.category) === 'secrets');
       for (const member of run) {
-        if (member.start === start && member.end === end) continue;
-        grown.set(member, { ...member, start, end, value: text.slice(start, end) });
+        const widened = member.start !== start || member.end !== end;
+        if (!widened && !containsSecret) continue;
+        grown.set(member, {
+          ...member, start, end, value: text.slice(start, end),
+          // An identifier mapping is safe only for its original span. It must
+          // never stand in for a larger credential or containing private URL.
+          replacement: widened || containsSecret ? undefined : member.replacement,
+        });
       }
     };
     for (const candidate of ordered) {
@@ -157,7 +166,15 @@ export function scanText(text: string, options: ScanOptions = {}): Finding[] {
   const protectedRanges = findPowerShellRegexRanges(text);
   const candidates: Candidate[] = activeDetectors
     .flatMap((detector) => detector.detect(text).map((match) => ({ ...match, detector })))
-    .filter((candidate) => !protectedRanges.some((range) => overlaps(candidate, range)));
+    .filter((candidate) => {
+      const protectedMatch = protectedRanges.some((range) => overlaps(candidate, range));
+      if (!protectedMatch) return true;
+      if ((candidate.category ?? candidate.detector.category) !== 'secrets') return false;
+      // Known credential shapes still matter inside executable regex strings.
+      // Generic assignments can instead be regex syntax (password=\w+).
+      return candidate.detector.id !== 'secret-assignment' ||
+        !/\\[dDsSwWbBpP]|\[[^\]]*\]|[.*+?{}^$|]/.test(candidate.value);
+    });
   const resolved = resolveOverlaps(coverContainingMatches(text, candidates));
 
   const counters = new Map<string, number>();

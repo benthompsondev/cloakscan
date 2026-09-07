@@ -10,11 +10,25 @@ text before sharing it.
   `Select-String -Pattern`, common `[regex]::Match`/`Matches`/`Replace` calls,
   and ordinary `switch -Regex` cases are protected before detectors run. This
   prevents ticket-like fragments and character classes from being rewritten.
+  Recognizable credentials still get cloaked inside those strings. Generic
+  regex syntax such as `password=\w+` stays intact.
 - Password and secret fields redact quoted and unquoted same-line literals in
   common assignment, JSON, YAML, environment-file, CLI, and simple XML shapes.
   Variables, command calls, and expressions such as `Generate-Password`,
   `$existingPassword`, or `(Get-RandomPassword)` are executable code, not
   pasted secrets, and remain unchanged.
+  Multiline quoted literals, Python triple quotes, PowerShell here strings,
+  XML text and YAML block scalars (including marker comments) cloak the full
+  captured body. JSON string values treat dollar expressions as literal data.
+  Incomplete or malformed syntax still needs manual review.
+- Overlapping redactable findings cover their combined span, including across
+  categories. A token inside an internal URL cannot leave the private host and
+  path visible. The highest-priority finding supplies the placeholder label.
+  Review leads do not enlarge redactions, and expanded spans cannot use a
+  Portfolio-code identifier replacement.
+- Authorization schemes are case-insensitive. Explicit Basic and Bearer
+  headers accept short credentials, including quoted JSON header fields,
+  while preserving the header name and surrounding quotes.
 - Username detection is intentionally conservative. It uses explicit labels
   such as `Username`, `SamAccountName`, and `UPN`, plus a small set of cmdlets
   where `-Identity` clearly means a user/account. Generic `-Identity`,
@@ -30,6 +44,28 @@ text before sharing it.
 - Absolute Windows paths are redacted as a whole, including quoted paths and
   paths containing spaces. Unquoted paths stop before a following PowerShell
   assignment so one finding cannot swallow neighboring code.
+
+## Health information and review limits
+
+Strict, Maximum and the Canada/US packs cover labeled health identifiers.
+Balanced and Code & secrets do not enable these personal-data rules by default.
+Recognized labels include MRN, medical record number, PatientID, HealthCard,
+HCN, PHN, NHS Number and OHIP, including quoted JSON keys, mixed case and
+underscore separators. Grouped numbers and version codes are cloaked together;
+long identifiers are not shortened to a redacted prefix. These are contextual
+shape checks, not validation that a patient or health number exists.
+
+Labeled phone, address and birth-date rules also recognize quoted JSON keys.
+Address values keep their enclosing quotes and are not truncated at a fixed
+length. Ordinary prose, unlabeled numbers and generic technical fields are
+not treated as patient records.
+
+Removing identifiers does not de-identify a clinical narrative. Diagnoses,
+medications, dates of care, rare events, relatives, locations and combinations
+of details can still identify someone. Review clinical prose and table exports
+manually. Use Cloak Lists for known private terms. Unlabeled or encoded secrets,
+incomplete key blocks, unfamiliar credentials, and confidential services on
+ordinary public domains also need review.
 
 ## v0.5 coverage additions
 

@@ -16,7 +16,7 @@ import { luhnValid } from './paymentcards';
  * rather than partially redacted with trailing digits left behind.
  */
 const PHONE_RE =
-  /\b(?:[Pp]hone(?:[ _]?[Nn]umber)?|[Mm]obile|[Cc]ell|[Tt]el(?:ephone)?|[Ff]ax)\b[ \t]*[:=][ \t]*["']?((?:\+?1[ \t.-]?)?\(?\d{3}\)?[ \t.-]?\d{3}[ \t.-]?\d{4}(?:[ \t]*(?:x|ext\.?)[ \t]*\d{1,5})?)(?![\d-])/g;
+  /\b(?:phone(?:[ _-]?number)?|mobile|cell|tel(?:ephone)?|fax)\b["']?[ \t]*[:=][ \t]*["']?((?:\+?1[ \t.-]?)?\(?\d{3}\)?[ \t.-]?\d{3}[ \t.-]?\d{4}(?:[ \t]*(?:x|ext\.?)[ \t]*\d{1,5})?)(?![\d-])/gi;
 
 export const phoneDetector: Detector = {
   id: 'phone-number',
@@ -35,7 +35,7 @@ export const phoneDetector: Detector = {
  * street number — prose after "Address:" is not guessed at.
  */
 const ADDRESS_RE =
-  /\b(?:[Ss]treet[ _]?[Aa]ddress|[Hh]ome[ _]?[Aa]ddress|[Mm]ailing[ _]?[Aa]ddress|[Aa]ddress|[Ss]treet)\b[ \t]*[:=][ \t]*["']?(\d{1,6}[ \t]+[A-Za-z0-9 .,'#/-]{3,78}[A-Za-z0-9.])/g;
+  /\b(?:street[ _-]?address|home[ _-]?address|mailing[ _-]?address|address|street)\b["']?[ \t]*[:=][ \t]*(?:"([^"\r\n]+)"|'((?:''|[^'\r\n])+)'|([^\r\n]+))/gi;
 
 export const addressDetector: Detector = {
   id: 'physical-address',
@@ -46,12 +46,20 @@ export const addressDetector: Detector = {
   priority: 54,
   strictOnly: true,
   explanation: 'A street address in an explicit Address-style field.',
-  detect: (text) => regexMatches(text, ADDRESS_RE, { group: 1, confidenceFor: () => 'medium' }),
+  detect: (text): RawMatch[] => [...text.matchAll(ADDRESS_RE)].flatMap((match) => {
+    const raw = match[1] ?? match[2] ?? match[3];
+    // An unquoted address ends before the next labeled field. Quoted values
+    // retain commas, apostrophes and all trailing address components.
+    const value = (match[3] ? raw.split(/[ \t]+(?=[A-Za-z_][A-Za-z _-]*[:=])/)[0] : raw).trimEnd();
+    if (!/^\d{1,6}[ \t]+[A-Za-z0-9][A-Za-z0-9 .,'#/-]{3,}$/.test(value)) return [];
+    const start = match.index + match[0].lastIndexOf(raw);
+    return [{ start, end: start + value.length, value, confidence: 'medium' }];
+  }),
 };
 
 /** Dates of birth in DOB/DateOfBirth/BirthDate fields, common date shapes. */
 const DOB_RE =
-  /\b(?:DOB|[Dd]ate[ _]?[Oo]f[ _]?[Bb]irth|[Bb]irth[ _]?[Dd]ate|[Bb]irthday)\b[ \t]*[:=][ \t]*["']?(\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|[A-Z][a-z]+ \d{1,2},? \d{4})\b/g;
+  /\b(?:DOB|date[ _-]?of[ _-]?birth|birth[ _-]?date|birthday)\b["']?[ \t]*[:=][ \t]*["']?(\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|[a-z]+ \d{1,2},? \d{4})\b/gi;
 
 const MONTH_NAMES = [
   'january', 'february', 'march', 'april', 'may', 'june',
@@ -95,7 +103,7 @@ export function plausibleDob(value: string): boolean {
     return validCalendarDate(year, a, b) || validCalendarDate(year, b, a);
   }
 
-  const written = value.match(/^([A-Z][a-z]+) (\d{1,2}),? (\d{4})$/);
+  const written = value.match(/^([a-z]+) (\d{1,2}),? (\d{4})$/i);
   if (written) {
     const month = MONTH_NAMES.indexOf(written[1].toLowerCase()) + 1;
     if (month === 0) return false;
@@ -130,7 +138,7 @@ export const dobDetector: Detector = {
  * actually issues (not 0, not 8).
  */
 const SIN_LABELED_RE =
-  /\b(?:SIN|[Ss]ocial[ \t]?[Ii]nsurance(?:[ \t]?[Nn]umber)?)\b[ \t]*[:#=][ \t]*["']?(\d{3}[ \t-]?\d{3}[ \t-]?\d{3})\b/g;
+  /\b(?:SIN|social[ _-]?insurance(?:[ _-]?number)?)\b["']?[ \t]*[:#=][ \t]*["']?(\d{3}[ \t-]?\d{3}[ \t-]?\d{3})(?![\w-])/gi;
 const SIN_GROUPED_RE = /(?<![\d-])\d{3}([ -])\d{3}\1\d{3}(?![\d-])/g;
 
 export function isValidSin(value: string): boolean {
@@ -162,11 +170,12 @@ export const sinDetector: Detector = {
 
 /**
  * Health identifiers in explicit MRN/HealthCard/PatientID-style fields.
- * The value must be 6–15 identifier characters containing at least four
- * digits, so words like "pending" in those fields are ignored.
+ * Consume a complete identifier run, including grouped health-card numbers
+ * and version codes. Validate the whole value instead of truncating at a
+ * regex length cap, which previously left long MRN suffixes visible.
  */
 const HEALTH_ID_RE =
-  /\b(?:MRN|[Mm]edical[ \t]?[Rr]ecord(?:[ \t]?[Nn]umber)?|[Hh]ealth[ \t]?[Cc]ard(?:[ \t]?[Nn]umber)?|HCN|PHN|[Pp]atient[ \t]?[Ii][Dd])\b[ \t]*[:#=][ \t]*["']?([A-Za-z0-9-]{6,15})\b/g;
+  /\b(?:MRN|medical[ _-]?record(?:[ _-]?(?:number|no|id))?|health[ _-]?card(?:[ _-]?(?:number|no))?|HCN|PHN|patient[ _-]?(?:id|number)|NHS(?:[ _-]?number)?|OHIP(?:[ _-]?(?:number|no))?)\b["']?[ \t]*[:#=][ \t]*["']?([A-Za-z0-9]+(?:[-_./][A-Za-z0-9]+)*(?:[ \t]+\d+(?:[-_./][A-Za-z0-9]+)*)*(?:[ \t]+[A-Z]{2}(?![A-Za-z0-9_]|[ \t]*[:=]))?)(?![\w./-])/gi;
 
 export const healthIdDetector: Detector = {
   id: 'health-identifier',
@@ -180,6 +189,9 @@ export const healthIdDetector: Detector = {
   detect: (text) =>
     regexMatches(text, HEALTH_ID_RE, {
       group: 1,
-      confidenceFor: (value) => ((value.match(/\d/g)?.length ?? 0) >= 4 ? 'high' : null),
+      confidenceFor: (value) => (value.length >= 6 && (value.match(/\d/g)?.length ?? 0) >= 4 ? 'high' : null),
+    }).map((match) => {
+      const value = match.value.replace(/[ \t]+(?:is|in|on|to|at|of|by|or|as)$/, '');
+      return { ...match, value, end: match.start + value.length };
     }),
 };
