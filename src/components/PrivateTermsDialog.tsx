@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { SessionState } from '../lib/session';
 import { analyzePrivateTerms, createPrivateTermsDetector } from '../lib/customTerms';
 import { scanText } from '../lib/scan';
@@ -39,6 +40,7 @@ export function PrivateTermsDialog({
   onClose,
 }: QuickCloakDialogProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
 
   // Move focus into the dialog on open and hand it back to whatever opened
@@ -47,8 +49,11 @@ export function PrivateTermsDialog({
     if (open) {
       openerRef.current =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const appRoot = document.getElementById('root');
+      appRoot?.setAttribute('inert', '');
       textareaRef.current?.focus();
       return () => {
+        appRoot?.removeAttribute('inert');
         openerRef.current?.focus();
         openerRef.current = null;
       };
@@ -73,15 +78,39 @@ export function PrivateTermsDialog({
     }),
   );
 
-  return (
+  return createPortal(
     <div
       className="dialog-backdrop"
       onClick={onClose}
       onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onClose();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const focusable = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ) ?? [],
+        );
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }}
     >
       <div
+        ref={dialogRef}
         className="dialog dialog-wide"
         role="dialog"
         aria-modal="true"
@@ -199,6 +228,7 @@ export function PrivateTermsDialog({
           <code className="rule-preview-after">{exampleAfter}</code>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

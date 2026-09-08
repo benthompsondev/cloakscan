@@ -14,8 +14,6 @@ import {
   savePreferencesV2,
 } from './lib/preferences';
 import {
-  BALANCED_PROFILE,
-  BUILT_IN_PROFILES,
   MAX_PROFILES,
   enabledRuleIds,
   generateId,
@@ -30,6 +28,7 @@ import {
   type CustomPack,
 } from './lib/customPacks';
 import {
+  activeConfigOf,
   applyCloakListToWorkspace,
   cloneConfig,
   type Workspace,
@@ -42,6 +41,7 @@ import { DemoBanner } from './components/DemoBanner';
 import { ScanView } from './components/ScanView';
 import { SettingsView } from './components/settings/SettingsView';
 import { AboutView } from './components/AboutView';
+import { disabledSensitiveRuleIds } from './lib/readiness';
 
 export interface Notice {
   kind: 'ok' | 'err';
@@ -65,12 +65,24 @@ export interface CloakListSeed {
 // list and rescan" can be computed without touching React state ordering.
 export type { Workspace } from './lib/workspaceTransitions';
 
+function disabledSensitiveRuleKeyOf(workspace: Workspace): string {
+  const config = activeConfigOf(workspace);
+  return disabledSensitiveRuleIds(
+    enabledRuleIds(resolveRuleStates(config, workspace.customPacks)),
+  ).join('\u0000');
+}
+
 export default function App() {
   const route = useHashRoute();
   const [session, setSession] = useState<SessionState>(createEmptySession);
   const [scanMeta, setScanMeta] = useState<ScanMeta | null>(null);
   const [listSeed, setListSeed] = useState<CloakListSeed | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [reviewReminderVisible, setReviewReminderVisible] = useState(true);
+  const [coverageAcknowledgement, setCoverageAcknowledgement] = useState({
+    ruleKey: '',
+    acknowledged: false,
+  });
   const noticeTimer = useRef<number | undefined>(undefined);
   const [workspace, setWorkspace] = useState<Workspace>(() => {
     const stored = loadPreferencesV2();
@@ -85,20 +97,21 @@ export default function App() {
       : { remember: false, activeProfileId: 'balanced', unsaved: null, profiles: [], customPacks: [] };
   });
 
-  const activeConfig: ProfileConfig = useMemo(() => {
-    const builtIn = BUILT_IN_PROFILES.find((profile) => profile.id === workspace.activeProfileId);
-    if (builtIn) return builtIn;
-    if (workspace.activeProfileId === 'unsaved' && workspace.unsaved) return workspace.unsaved;
-    return (
-      workspace.profiles.find((p) => p.id === workspace.activeProfileId) ?? BALANCED_PROFILE
-    );
-  }, [workspace]);
+  const activeConfig: ProfileConfig = useMemo(() => activeConfigOf(workspace), [workspace]);
 
   const resolvedStates = useMemo(
     () => resolveRuleStates(activeConfig, workspace.customPacks),
     [activeConfig, workspace.customPacks],
   );
   const enabledIds = useMemo(() => enabledRuleIds(resolvedStates), [resolvedStates]);
+  const disabledSensitiveIds = useMemo(
+    () => disabledSensitiveRuleIds(enabledIds),
+    [enabledIds],
+  );
+  const disabledSensitiveRuleKey = disabledSensitiveIds.join('\u0000');
+  const coverageAcknowledged =
+    coverageAcknowledgement.acknowledged &&
+    coverageAcknowledgement.ruleKey === disabledSensitiveRuleKey;
 
   const showNotice = (n: Notice) => {
     setNotice(n);
@@ -111,6 +124,12 @@ export default function App() {
 
   const commit = (next: Workspace, options: { invalidate?: boolean } = {}) => {
     setWorkspace(next);
+    const nextRuleKey = disabledSensitiveRuleKeyOf(next);
+    setCoverageAcknowledgement((current) =>
+      current.ruleKey === nextRuleKey
+        ? current
+        : { ruleKey: nextRuleKey, acknowledged: false },
+    );
     if (next.remember) {
       savePreferencesV2({
         version: 2,
@@ -160,6 +179,14 @@ export default function App() {
   const onToggleRule = (id: string, enabled: boolean) =>
     updateActiveConfig((c) => {
       c.overrides = { ...c.overrides, [id]: enabled };
+    });
+
+  const onEnableAllBuiltInRules = () =>
+    updateActiveConfig((config) => {
+      config.overrides = {
+        ...config.overrides,
+        ...Object.fromEntries(detectors.map((detector) => [detector.id, true])),
+      };
     });
 
   const onChangeFormat = (format: RedactionChoice) =>
@@ -301,15 +328,13 @@ export default function App() {
     commit({ ...workspace, activeProfileId: 'balanced', unsaved: null });
 
   const onClearPreferences = () => {
-    clearPreferences();
-    setWorkspace({
+    commit({
       remember: false,
       activeProfileId: 'balanced',
       unsaved: null,
       profiles: [],
       customPacks: [],
     });
-    invalidateScan();
     showNotice({ kind: 'ok', text: 'Stored preferences deleted from this device.' });
   };
 
@@ -554,6 +579,11 @@ export default function App() {
     setScanMeta(null);
     setListSeed(null);
     setNotice(null);
+    setReviewReminderVisible(true);
+    setCoverageAcknowledgement({
+      ruleKey: disabledSensitiveRuleKey,
+      acknowledged: false,
+    });
   };
 
   const settingsProps = {
@@ -603,6 +633,9 @@ export default function App() {
             activeConfig={activeConfig}
             enabledCount={enabledIds.length}
             totalCount={detectors.length}
+            disabledSensitiveRules={disabledSensitiveIds.length}
+            coverageAcknowledged={coverageAcknowledged}
+            reviewReminderVisible={reviewReminderVisible}
             onSource={setSource}
             onUpdateTerms={updateTerms}
             onSetOutputMode={setOutputMode}
@@ -613,6 +646,20 @@ export default function App() {
             onDismissCandidate={dismissCandidate}
             onBuildCloakList={buildCloakList}
             onSelectProfile={onSelectProfile}
+            onEnableAllBuiltInRules={onEnableAllBuiltInRules}
+            onAcknowledgeCoverage={() =>
+              setCoverageAcknowledgement({
+                ruleKey: disabledSensitiveRuleKey,
+                acknowledged: true,
+              })
+            }
+            onShowCoverage={() =>
+              setCoverageAcknowledgement({
+                ruleKey: disabledSensitiveRuleKey,
+                acknowledged: false,
+              })
+            }
+            onDismissReviewReminder={() => setReviewReminderVisible(false)}
             onClear={clearAll}
             onNotice={showNotice}
           />

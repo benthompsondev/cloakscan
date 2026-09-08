@@ -5,11 +5,15 @@ import type { OutputMode } from './sanitize';
 import { detectors } from './detectors';
 
 /** Coverage disclosure, not a claim that the input contains sensitive data. */
-export function disabledSensitiveRuleCount(enabledIds: readonly string[]): number {
+export function disabledSensitiveRuleIds(enabledIds: readonly string[]): string[] {
   return detectors.filter((rule) =>
     !rule.reviewLead && (rule.category === 'personal' || rule.category === 'secrets') &&
     !enabledIds.includes(rule.id),
-  ).length;
+  ).map((rule) => rule.id);
+}
+
+export function disabledSensitiveRuleCount(enabledIds: readonly string[]): number {
+  return disabledSensitiveRuleIds(enabledIds).length;
 }
 
 /**

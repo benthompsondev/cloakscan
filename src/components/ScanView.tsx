@@ -8,9 +8,9 @@ import type { OutputMode } from '../lib/sanitize';
 import { analyzePrivateTerms } from '../lib/customTerms';
 import { isCloakList } from '../lib/customPacks';
 import { packById } from '../lib/packs';
-import { BUILT_IN_PROFILES, enabledRuleIds, resolveRuleStates, type ProfileConfig } from '../lib/profiles';
+import { BUILT_IN_PROFILES, type ProfileConfig } from '../lib/profiles';
 import type { Notice, ScanMeta, Workspace } from '../App';
-import { assessReadiness, disabledSensitiveRuleCount } from '../lib/readiness';
+import { assessReadiness } from '../lib/readiness';
 import { SourcePanel } from './SourcePanel';
 import { PreviewPanel } from './PreviewPanel';
 import { FindingsPanel } from './FindingsPanel';
@@ -34,6 +34,9 @@ interface ScanViewProps {
   activeConfig: ProfileConfig;
   enabledCount: number;
   totalCount: number;
+  disabledSensitiveRules: number;
+  coverageAcknowledged: boolean;
+  reviewReminderVisible: boolean;
   onSource: (text: string) => void;
   onUpdateTerms: (patch: Partial<SessionState>) => void;
   onSetOutputMode: (mode: OutputMode) => void;
@@ -44,6 +47,10 @@ interface ScanViewProps {
   onDismissCandidate: (term: string) => void;
   onBuildCloakList: (terms: string[]) => void;
   onSelectProfile: (id: string) => void;
+  onEnableAllBuiltInRules: () => void;
+  onAcknowledgeCoverage: () => void;
+  onShowCoverage: () => void;
+  onDismissReviewReminder: () => void;
   onClear: () => void;
   onNotice: (notice: Notice) => void;
 }
@@ -60,6 +67,9 @@ export function ScanView({
   activeConfig,
   enabledCount,
   totalCount,
+  disabledSensitiveRules,
+  coverageAcknowledged,
+  reviewReminderVisible,
   onSource,
   onUpdateTerms,
   onSetOutputMode,
@@ -70,14 +80,14 @@ export function ScanView({
   onDismissCandidate,
   onBuildCloakList,
   onSelectProfile,
+  onEnableAllBuiltInRules,
+  onAcknowledgeCoverage,
+  onShowCoverage,
+  onDismissReviewReminder,
   onClear,
   onNotice,
 }: ScanViewProps) {
   const [termsOpen, setTermsOpen] = useState(false);
-  const [guidanceVisible, setGuidanceVisible] = useState(true);
-  const disabledSensitiveRules = disabledSensitiveRuleCount(
-    enabledRuleIds(resolveRuleStates(activeConfig, workspace.customPacks)),
-  );
   const termCount = analyzePrivateTerms(session.privateTermsInput, session.termsCaseSensitive)
     .terms.length;
 
@@ -185,7 +195,7 @@ export function ScanView({
         <a href="#/settings/general">more in Settings</a>.
       </p>
 
-      {guidanceVisible && (
+      {reviewReminderVisible && (
         <aside className="scan-guidance" role="note" aria-label="Detection reminder">
           <span className="scan-guidance-icon" aria-hidden="true">
             !
@@ -204,26 +214,49 @@ export function ScanView({
             className="scan-guidance-dismiss"
             aria-label="Hide detection reminder"
             title="Hide reminder"
-            onClick={() => setGuidanceVisible(false)}
+            onClick={onDismissReviewReminder}
           >
             ×
           </button>
         </aside>
       )}
 
-      {disabledSensitiveRules > 0 && (
-        <aside className="scan-guidance" role="alert" aria-label="Disabled sensitive-data rules">
-          <span>
-            <strong>{disabledSensitiveRules} sensitive-data rules are off.</strong>{' '}
-            This configuration can leave health identifiers, personal information or credentials
-            unchanged. Safe-share changes replacements, not which rules run. Enable all built-in
-            rules, then scan again, or review the omitted categories manually.
-          </span>
-          <button type="button" className="btn btn-mini" onClick={() => onSelectProfile('maximum')}>
-            Enable all built-in rules
-          </button>
-        </aside>
-      )}
+      {disabledSensitiveRules > 0 &&
+        (coverageAcknowledged ? (
+          <aside
+            className="scan-guidance scan-guidance-coverage scan-guidance-compact"
+            role="note"
+            aria-label="Limited sensitive-data coverage"
+          >
+            <span>
+              <strong>{disabledSensitiveRules} sensitive-data rules are off.</strong>
+            </span>
+            <button type="button" className="btn btn-mini" onClick={onShowCoverage}>
+              Show coverage details
+            </button>
+          </aside>
+        ) : (
+          <aside
+            className="scan-guidance scan-guidance-coverage"
+            role="alert"
+            aria-label="Disabled sensitive-data rules"
+          >
+            <span>
+              <strong>{disabledSensitiveRules} sensitive-data rules are off.</strong>{' '}
+              This configuration can leave health identifiers, personal information or credentials
+              unchanged. Safe-share changes replacements, not which rules run. Enable all built-in
+              rules, then scan again, or review the omitted categories manually.
+            </span>
+            <span className="scan-guidance-actions">
+              <button type="button" className="btn btn-mini" onClick={onAcknowledgeCoverage}>
+                Hide coverage details
+              </button>
+              <button type="button" className="btn btn-mini" onClick={onEnableAllBuiltInRules}>
+                Enable all built-in rules
+              </button>
+            </span>
+          </aside>
+        ))}
 
       <div className="columns">
         <SourcePanel

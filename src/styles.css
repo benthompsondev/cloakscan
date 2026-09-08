@@ -336,6 +336,22 @@ body {
   outline-offset: 1px;
 }
 
+.scan-guidance-coverage {
+  align-items: center;
+  padding-right: 12px;
+}
+
+.scan-guidance-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.scan-guidance-compact {
+  justify-content: space-between;
+}
+
 /* ---------- dialog ---------- */
 
 .dialog-backdrop {
@@ -2535,6 +2551,17 @@ body {
   .footer {
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .scan-guidance-coverage {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .scan-guidance-actions {
+    align-items: stretch;
+    flex-direction: column;
+    margin-left: 0;
   }
 
   .finding-row {
