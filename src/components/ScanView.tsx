@@ -8,9 +8,9 @@ import type { OutputMode } from '../lib/sanitize';
 import { analyzePrivateTerms } from '../lib/customTerms';
 import { isCloakList } from '../lib/customPacks';
 import { packById } from '../lib/packs';
-import { BUILT_IN_PROFILES, type ProfileConfig } from '../lib/profiles';
+import { BUILT_IN_PROFILES, enabledRuleIds, resolveRuleStates, type ProfileConfig } from '../lib/profiles';
 import type { Notice, ScanMeta, Workspace } from '../App';
-import { assessReadiness } from '../lib/readiness';
+import { assessReadiness, disabledSensitiveRuleCount } from '../lib/readiness';
 import { SourcePanel } from './SourcePanel';
 import { PreviewPanel } from './PreviewPanel';
 import { FindingsPanel } from './FindingsPanel';
@@ -75,6 +75,9 @@ export function ScanView({
 }: ScanViewProps) {
   const [termsOpen, setTermsOpen] = useState(false);
   const [guidanceVisible, setGuidanceVisible] = useState(true);
+  const disabledSensitiveRules = disabledSensitiveRuleCount(
+    enabledRuleIds(resolveRuleStates(activeConfig, workspace.customPacks)),
+  );
   const termCount = analyzePrivateTerms(session.privateTermsInput, session.termsCaseSensitive)
     .terms.length;
 
@@ -208,6 +211,20 @@ export function ScanView({
         </aside>
       )}
 
+      {disabledSensitiveRules > 0 && (
+        <aside className="scan-guidance" role="alert" aria-label="Disabled sensitive-data rules">
+          <span>
+            <strong>{disabledSensitiveRules} sensitive-data rules are off.</strong>{' '}
+            This configuration can leave health identifiers, personal information or credentials
+            unchanged. Safe-share changes replacements, not which rules run. Enable all built-in
+            rules, then scan again, or review the omitted categories manually.
+          </span>
+          <button type="button" className="btn btn-mini" onClick={() => onSelectProfile('maximum')}>
+            Enable all built-in rules
+          </button>
+        </aside>
+      )}
+
       <div className="columns">
         <SourcePanel
           value={session.sourceText}
@@ -237,6 +254,7 @@ export function ScanView({
             candidates,
             codeWarnings,
             outputMode: session.outputMode,
+            disabledSensitiveRules,
           });
           return (
             <>

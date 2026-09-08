@@ -7,6 +7,7 @@ import {
 } from './customTerms';
 import { findPowerShellRegexRanges } from './protectedRanges';
 import { DEFAULT_TEMPLATE, renderPlaceholder } from './redaction';
+import { detectionView } from './detectionView';
 
 interface Candidate extends RawMatch {
   detector: Detector;
@@ -164,8 +165,19 @@ export function scanText(text: string, options: ScanOptions = {}): Finding[] {
   ];
 
   const protectedRanges = findPowerShellRegexRanges(text);
+  const view = detectionView(text);
   const candidates: Candidate[] = activeDetectors
-    .flatMap((detector) => detector.detect(text).map((match) => ({ ...match, detector })))
+    .flatMap((detector) => {
+      const raw = detector.detect(text).map((match) => ({ ...match, detector }));
+      if (!view) return raw;
+      // Supplement raw detection rather than replacing it. Normalization must
+      // never remove an existing finding or change the source used for output.
+      return [...raw, ...detector.detect(view.text).map((match) => {
+        const start = view.offsets[match.start];
+        const end = view.offsets[match.end];
+        return { ...match, start, end, value: text.slice(start, end), detector, replacement: undefined };
+      })];
+    })
     .filter((candidate) => {
       const protectedMatch = protectedRanges.some((range) => overlaps(candidate, range));
       if (!protectedMatch) return true;

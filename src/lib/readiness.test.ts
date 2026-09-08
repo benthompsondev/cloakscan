@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { assessReadiness } from './readiness';
+import { assessReadiness, disabledSensitiveRuleCount } from './readiness';
+import { BALANCED_PROFILE, MAXIMUM_PROFILE, enabledRuleIds, resolveRuleStates } from './profiles';
 import type { Finding } from './types';
 import type { CloakCandidate } from './candidates';
 import type { CodeWarning } from './codeWarnings';
@@ -36,6 +37,17 @@ const warning: CodeWarning = {
 };
 
 describe('assessReadiness', () => {
+  it('keeps omitted personal or secret rules visible even with no findings', () => {
+    const balanced = disabledSensitiveRuleCount(enabledRuleIds(resolveRuleStates(BALANCED_PROFILE)));
+    expect(balanced).toBeGreaterThan(0);
+    expect(assessReadiness({
+      findings: [], candidates: [], codeWarnings: [], outputMode: 'safe-share',
+      disabledSensitiveRules: balanced,
+    }).status).toBe('review');
+    const all = enabledRuleIds(resolveRuleStates(MAXIMUM_PROFILE));
+    expect(disabledSensitiveRuleCount(all)).toBe(0);
+    expect(disabledSensitiveRuleCount(all.filter((id) => id !== 'secret-assignment'))).toBe(1);
+  });
   it('is ready when everything is handled', () => {
     const report = assessReadiness({
       findings: [finding({})],

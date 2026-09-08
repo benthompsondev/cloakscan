@@ -455,6 +455,12 @@ function findClosingQuote(
       backslashes += 1;
     }
     if (backslashes % 2 === 1 || text[index - 1] === '`') continue;
+    // POSIX shells concatenate single-quoted segments around an escaped
+    // apostrophe: 'Falcon'\''Tail'. The entire literal is one credential.
+    if (quote === "'" && text.slice(index, index + 4) === "'\\''") {
+      index += 3;
+      continue;
+    }
     if (quote === "'" && text[index + 1] === "'") {
       index += 1;
       continue;

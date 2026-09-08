@@ -76,8 +76,8 @@ test('complete flow: scan, build list, save/use/rescan, compare, export, clear',
     page.getByRole('group', { name: 'Output mode' }).getByRole('button', { name: 'Portfolio-code' }),
   ).toHaveAttribute('aria-pressed', 'true');
 
-  // Export the three kit files (readiness is clean in portfolio-code mode,
-  // so no confirmation is needed here).
+  // Balanced-derived coverage still omits personal-data rules. Changing the
+  // output mode does not clear that warning or the existing export reminder.
   const kit = page.getByRole('region', { name: 'Portfolio Export Kit' });
   const contents: Record<string, string> = {};
   for (const [index, filename] of [
@@ -87,6 +87,8 @@ test('complete flow: scan, build list, save/use/rescan, compare, export, clear',
   ].entries()) {
     const downloadPromise = page.waitForEvent('download');
     await kit.getByRole('button', { name: 'Export', exact: true }).nth(index).click();
+    await expect(kit.getByText('Exporting is not a sign-off')).toBeVisible();
+    await kit.getByRole('button', { name: 'Export anyway' }).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toBe(filename);
     contents[filename] = await readDownload(download);

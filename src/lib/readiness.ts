@@ -2,6 +2,15 @@ import type { Finding } from './types';
 import type { CloakCandidate } from './candidates';
 import type { CodeWarning } from './codeWarnings';
 import type { OutputMode } from './sanitize';
+import { detectors } from './detectors';
+
+/** Coverage disclosure, not a claim that the input contains sensitive data. */
+export function disabledSensitiveRuleCount(enabledIds: readonly string[]): number {
+  return detectors.filter((rule) =>
+    !rule.reviewLead && (rule.category === 'personal' || rule.category === 'secrets') &&
+    !enabledIds.includes(rule.id),
+  ).length;
+}
 
 /**
  * Sanitization readiness: one honest summary of what still deserves a look
@@ -18,7 +27,8 @@ export interface ReadinessItem {
     | 'kept-findings-low'
     | 'review-leads'
     | 'candidates'
-    | 'code-warnings';
+    | 'code-warnings'
+    | 'disabled-rules';
   count: number;
   message: string;
   tone: ReadinessTone;
@@ -41,9 +51,18 @@ export function assessReadiness(input: {
   candidates: readonly CloakCandidate[];
   codeWarnings: readonly CodeWarning[];
   outputMode: OutputMode;
+  disabledSensitiveRules?: number;
 }): ReadinessReport {
   const { findings, candidates, codeWarnings, outputMode } = input;
   const items: ReadinessItem[] = [];
+  if (input.disabledSensitiveRules) {
+    items.push({
+      kind: 'disabled-rules',
+      count: input.disabledSensitiveRules,
+      message: `${plural(input.disabledSensitiveRules, 'sensitive-data rule')} disabled. Values covered by those rules can remain in the output.`,
+      tone: 'warn',
+    });
+  }
 
   // Any disabled ordinary finding means a detected value ships unchanged, so
   // every severity counts here. Review leads are tracked separately below.

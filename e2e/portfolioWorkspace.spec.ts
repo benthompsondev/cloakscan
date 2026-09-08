@@ -36,13 +36,15 @@ test('readiness summary reports open items and settles when handled', async ({ p
   await expect(readiness).toContainText('to review');
   await expect(readiness).toContainText('suggested term');
 
-  // Dismissing the suggestion clears the item.
+  // Dismissing the suggestion clears that item; omitted rule coverage remains.
   await page.getByRole('button', { name: 'Dismiss Contoso Health' }).click();
-  await expect(readiness).toContainText('No flagged items');
+  await expect(readiness).not.toContainText('suggested term');
+  await expect(readiness).toContainText('sensitive-data rules');
 });
 
 test('keeping a medium-severity finding as-is keeps readiness open', async ({ page }) => {
   await page.goto('/#/');
+  await page.getByLabel('Detection profile').selectOption('maximum');
   // A lone IPv4 address: one medium-severity finding, nothing else.
   await page.getByLabel('Source text input').fill('Server responds at 203.0.113.42 today.');
   await page.getByRole('button', { name: 'Scan locally' }).click();

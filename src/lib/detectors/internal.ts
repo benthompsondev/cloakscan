@@ -45,7 +45,7 @@ export function looksInternalHost(host: string): boolean {
   return hasAdZoneLabel && WINDOWS_SERVER_LABEL_RE.test(first);
 }
 
-const URL_RE = /\b(?:https?|ldaps?):\/\/[^\s"'<>)\]]+/gi;
+const URL_RE = /\b(?:https?|ldaps?):\/\/[^\s"'<>\]]+/gi;
 
 export const internalUrlDetector: Detector = {
   id: 'internal-url',
@@ -59,6 +59,16 @@ export const internalUrlDetector: Detector = {
     regexMatches(text, URL_RE, {
       // Public URLs are skipped entirely; only internal-looking hosts are flagged.
       confidenceFor: (value) => (looksInternalHost(hostOf(value)) ? 'high' : null),
+    }).map((match) => {
+      // Parentheses are legal within a path. Only trim unmatched closing
+      // parentheses belonging to surrounding prose or Markdown.
+      let value = match.value;
+      let extraClosers = (value.match(/\)/g)?.length ?? 0) - (value.match(/\(/g)?.length ?? 0);
+      while (extraClosers > 0 && value.endsWith(')')) {
+        value = value.slice(0, -1);
+        extraClosers -= 1;
+      }
+      return { ...match, value, end: match.start + value.length };
     }),
 };
 
