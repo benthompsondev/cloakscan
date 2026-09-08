@@ -41,6 +41,19 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.5.8" date="2026-09-08">
+      <description>
+        <p>
+          Closes multiline, overlapping and copied-text detector gaps, expands
+          labeled health-identifier coverage, and makes disabled sensitive-data
+          rules visible in the readiness summary.
+        </p>
+        <p>
+          Disables native WebView2 autofill so newly pasted source text is not
+          collected in its autofill database.
+        </p>
+      </description>
+    </release>
     <release version="1.5.7" date="2026-08-30">
       <description>
         <p>

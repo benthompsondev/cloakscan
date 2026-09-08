@@ -1,2 +1,2 @@
 /** Kept in sync with package.json manually. */
-export const APP_VERSION = '1.5.7';
+export const APP_VERSION = '1.5.8';

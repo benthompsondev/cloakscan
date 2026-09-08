@@ -2,6 +2,26 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.8] - 2026-09-08
+
+### Safety
+
+- The Windows app disables WebView2's native general autofill. Pasted source text is no longer collected in its autofill database even when remembered CloakScan preferences are enabled. This prevents new collection; it does not erase data cached by an older version.
+- Redactable findings that overlap now cover their full combined span across categories. A provider token inside an internal URL can no longer leave the private host or path visible.
+- Fixed-seed grammar tests now exercise copied Unicode spacing, fullwidth syntax, zero-width characters, JSON escapes, multiline literals and encoded connection-string passwords through both output modes.
+
+### Changed
+
+- The readiness panel warns when sensitive-data rules are disabled and keeps the limits of automated clinical-data cleanup visible after a scan.
+- Labeled health identifiers now cover more common MRN, patient ID, health-card, OHIP and NHS Number forms. Clinical narratives and unlabeled patient data still require manual review.
+
+### Fixed
+
+- Multiline credentials in quoted strings, Python triple quotes, PowerShell here strings, XML text and YAML blocks redact their complete captured body.
+- Copy-and-paste variations using fullwidth punctuation, Unicode spacing, zero-width spaces or a byte-order mark no longer bypass supported detector shapes or corrupt source offsets.
+- Explicit Basic and Bearer credentials, JSON header fields, long labeled values and credentials inside PowerShell regex strings no longer leave supported sensitive fragments visible.
+- A byte-order mark inside a public URL no longer makes the host look like an internal single-label name.
+
 ## [1.5.7] - 2026-08-30
 
 ### Changed
