@@ -2,6 +2,15 @@
 
 This file tracks the public CloakScan releases. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.6.0] - 2026-09-08
+
+### Fixed
+
+- "Enable all built-in rules" now enables all 49 built-in detectors without replacing the active profile or dropping Cloak Lists, custom rules, formats, or session terms. Existing scan output is still cleared so the new coverage cannot be mistaken for an old result.
+- The disabled-rule explanation can collapse into a persistent coverage notice. It stays collapsed for the current session, reopens when the disabled rule set changes, and disappears when all relevant rules are enabled.
+- Dismissing the general review reminder now lasts across navigation, scans, profile changes, output-mode changes, Back, and New Scan for the current session. Clear session or a reload restores it; the permanent review footer remains.
+- The custom-term dialog now traps forward and reverse keyboard focus, closes with Escape from any control, restores focus to its opener, and makes background actions unavailable while open.
+
 ## [1.5.8] - 2026-09-08
 
 ### Safety

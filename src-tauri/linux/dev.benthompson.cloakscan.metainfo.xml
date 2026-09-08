@@ -41,6 +41,19 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="1.6.0" date="2026-09-08">
+      <description>
+        <p>
+          Keeps custom coverage intact when every built-in rule is enabled and
+          makes disabled-rule and review reminders behave consistently for the
+          current session.
+        </p>
+        <p>
+          Keeps keyboard focus inside the custom-term dialog and blocks
+          background actions until the dialog closes.
+        </p>
+      </description>
+    </release>
     <release version="1.5.8" date="2026-09-08">
       <description>
         <p>
