@@ -62,6 +62,10 @@ const linuxMetainfo = readFileSync(
 );
 
 describe('shared tauri.conf.json privacy surface', () => {
+  it('disables WebView2 autofill instead of relying on HTML autocomplete off', () => {
+    expect(sharedConf.app.windows[0].generalAutofillEnabled).toBe(false);
+    expect(windowsConf.app.windows[0].generalAutofillEnabled).toBe(false);
+  });
   it('does not expose a global Tauri object to the page', () => {
     expect(sharedConf.app.withGlobalTauri).toBe(false);
   });

@@ -9,6 +9,7 @@
         "minWidth": 1024,
         "minHeight": 680,
         "center": true,
+        "generalAutofillEnabled": false,
         "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-background-networking --disable-component-update --disable-domain-reliability --no-pings"
       }
     ]

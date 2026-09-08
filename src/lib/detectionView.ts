@@ -1,12 +1,18 @@
 /** A detection-only view. Output always uses the untouched source and mapped spans. */
 export function detectionView(source: string): { text: string; offsets: number[] } | null {
-  if (!/[\u00a0\u2000-\u200a\u202f\u205f\u3000\uff01-\uff5e]|\\(?:\/|u[0-9a-fA-F]{4})/.test(source)) return null;
+  if (!/[\u00a0\u2000-\u200b\u202f\u205f\u3000\ufeff\uff01-\uff5e]|\\(?:\/|u[0-9a-fA-F]{4})/.test(source)) return null;
   const chars: string[] = [];
   const offsets: number[] = [];
   let quoted = false;
   for (let at = 0; at < source.length;) {
     const start = at;
     let char = source[at++];
+    // Ignore only these common copy/paste invisibles, not joiners or bidi
+    // controls with language semantics. Mapped spans retain intervening characters.
+    if (char === '\u200b' || char === '\ufeff') continue;
+    // Normalize syntax before tracking quotes: fullwidth quoted JSON can also
+    // contain escapes. Reversing this order leaves those escapes undecoded.
+    if (/[\uff01-\uff5e]/.test(char)) char = String.fromCharCode(char.charCodeAt(0) - 0xfee0);
     if (char === '"') quoted = !quoted;
     if (quoted && char === '\\' && at < source.length) {
       const next = source[at];
@@ -24,7 +30,6 @@ export function detectionView(source: string): { text: string; offsets: number[]
       }
     }
     if (/[\u00a0\u2000-\u200a\u202f\u205f\u3000]/.test(char)) char = ' ';
-    else if (/[\uff01-\uff5e]/.test(char)) char = String.fromCharCode(char.charCodeAt(0) - 0xfee0);
     offsets.push(start);
     chars.push(char);
   }

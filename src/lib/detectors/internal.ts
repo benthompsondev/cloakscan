@@ -1,6 +1,7 @@
 import type { Detector, RawMatch } from '../types';
 import { regexMatches } from './helpers';
 import { isValidIpv4 } from './network';
+import { detectionView } from '../detectionView';
 
 /** TLD or zone labels that conventionally mark intranet / non-public hosts. */
 const INTERNAL_SUFFIXES = ['local', 'internal', 'corp', 'lan', 'intranet', 'intra', 'lab'];
@@ -23,7 +24,8 @@ export function isPrivateIpv4(host: string): boolean {
 
 /** Extract the hostname from a matched URL without using the DOM URL parser. */
 function hostOf(url: string): string {
-  const afterScheme = url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
+  const comparable = detectionView(url)?.text ?? url;
+  const afterScheme = comparable.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
   const authority = afterScheme.split(/[/?#]/, 1)[0];
   const withoutUserInfo = authority.slice(authority.lastIndexOf('@') + 1);
   return withoutUserInfo.split(':', 1)[0].toLowerCase();
@@ -45,7 +47,8 @@ export function looksInternalHost(host: string): boolean {
   return hasAdZoneLabel && WINDOWS_SERVER_LABEL_RE.test(first);
 }
 
-const URL_RE = /\b(?:https?|ldaps?):\/\/[^\s"'<>\]]+/gi;
+// A pasted BOM must not truncate a public hostname into a single-label host.
+const URL_RE = /\b(?:https?|ldaps?):\/\/(?:\ufeff|[^\s"'<>\]])+/gi;
 
 export const internalUrlDetector: Detector = {
   id: 'internal-url',
